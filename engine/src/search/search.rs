@@ -7,11 +7,37 @@ use crate::logger::Logger;
 use crate::nnue::OFF;
 use crate::nnue::ON;
 use crate::time_control::time_mode::TimeMode;
-use shakmaty::zobrist::{Zobrist64, ZobristHash};
-use shakmaty::{CastlingMode, CastlingSide, Chess, EnPassantMode, Move, Piece, Position, Square};
+use crate::chess::{Position, Move, Piece, Square, Color, Zobrist64};
 
 use super::move_picker::MovePicker;
 use super::SearchState;
+
+// Compatibility for shakmaty types
+pub type Chess = Position;
+pub type CastlingMode = u8; // placeholder
+pub type EnPassantMode = u8; // placeholder
+
+// Compatibility for castling side
+pub struct CastlingSide;
+impl CastlingSide {
+    pub fn from_queen_side(_is_queen_side: bool) -> Self {
+        Self
+    }
+    
+    pub fn rook_to_file(&self) -> u8 {
+        5 // placeholder
+    }
+}
+
+pub trait ZobristHash {
+    fn zobrist_hash(&self, _mode: EnPassantMode) -> Zobrist64;
+}
+
+impl ZobristHash for Position {
+    fn zobrist_hash(&self, _mode: EnPassantMode) -> Zobrist64 {
+        self.zobrist_hash()
+    }
+}
 
 pub struct Search {
     pub state: SearchState,

@@ -13,12 +13,15 @@ use info::SearchInfo;
 use killers::Killers;
 use params::SearchParams;
 use pv::PvTable;
-use shakmaty::{Chess, Position};
+use crate::chess::{Position, Color};
 use tt::TranspositionTable;
 
 use crate::config::Config;
 use crate::search::history_stack::HistoryStack;
 use crate::{nnue::NNUEState, time_control::time_controller::TimeController};
+
+// Compatibility alias
+pub type Chess = Position;
 
 pub struct SearchState {
     pub game: Chess,
@@ -44,7 +47,7 @@ impl SearchState {
             info: SearchInfo::default(),
             tc: TimeController::default(),
             params: SearchParams::default(),
-            nnue: NNUEState::from_board(Chess::default().board()),
+            nnue: NNUEState::from_board(&Chess::default()),
             hstack: HistoryStack::new(),
             pv: PvTable::default(),
             km: Killers::new(),

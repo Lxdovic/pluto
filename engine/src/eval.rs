@@ -1,6 +1,8 @@
 /// Position evaluation module containing piece-square tables and evaluation functions.
 use crate::nnue::{NNUEState, NNUE};
-use shakmaty::{Chess, Color, Position};
+use crate::chess::{Position, Color};
+
+pub type Chess = Position; // Compatibility alias
 
 pub struct Eval {}
 

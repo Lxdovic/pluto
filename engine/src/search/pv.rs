@@ -1,4 +1,6 @@
-use shakmaty::{CastlingMode, Move};
+use crate::chess::Move;
+
+pub type CastlingMode = u8; // placeholder
 
 pub struct PvTable {
     pub length: [i32; 64],

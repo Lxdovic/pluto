@@ -1,4 +1,4 @@
-use shakmaty::Move;
+use crate::chess::Move;
 
 pub struct Killers {
     table: [Vec<Move>; 64],

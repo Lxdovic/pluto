@@ -1,6 +1,5 @@
 use crate::bound::Bound;
-use shakmaty::zobrist::Zobrist64;
-use shakmaty::Move;
+use crate::chess::{Zobrist64, Move};
 
 #[repr(C, align(8))]
 pub struct TranspositionTableEntry {

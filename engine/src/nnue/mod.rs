@@ -1,4 +1,6 @@
-use shakmaty::{Board, Piece, Square};
+use crate::chess::{Position, Piece, Square};
+
+pub type Board = Position; // Compatibility alias
 
 pub const FEATURES: usize = 768;
 pub const HIDDEN: usize = 512;
@@ -90,8 +92,10 @@ impl NNUEState {
     pub fn from_board(board: &Board) -> Self {
         let mut state = NNUEState::new();
 
-        for sq in board.occupied().into_iter() {
-            state.manual_update::<ON>(board.piece_at(sq).unwrap(), sq);
+        for sq in board.all_pieces().iter() {
+            if let Some(piece) = board.piece_at(sq) {
+                state.manual_update::<ON>(piece, sq);
+            }
         }
 
         state
@@ -143,8 +147,8 @@ pub fn nnue_index(piece: Piece, sq: Square) -> (usize, usize) {
     let p = piece.role as usize - 1;
     let c = piece.color as usize;
 
-    let white_idx = c * COLOR_STRIDE + p * PIECE_STRIDE + sq.flip_vertical() as usize;
-    let black_idx = (1 ^ c) * COLOR_STRIDE + p * PIECE_STRIDE + sq as usize;
+    let white_idx = c * COLOR_STRIDE + p * PIECE_STRIDE + sq.flip_vertical().index();
+    let black_idx = (1 ^ c) * COLOR_STRIDE + p * PIECE_STRIDE + sq.index();
 
     (black_idx, white_idx)
 }

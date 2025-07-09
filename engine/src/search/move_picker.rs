@@ -1,5 +1,5 @@
 use super::{tt::TranspositionTableEntry, SearchState};
-use shakmaty::{Move, MoveList, Role};
+use crate::chess::{Move, MoveList, Role};
 
 const MO_FACTOR: i32 = 10000;
 

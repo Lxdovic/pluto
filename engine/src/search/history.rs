@@ -1,4 +1,4 @@
-use shakmaty::{Role, Square};
+use crate::chess::{Role, Square};
 
 pub struct HistoryTable {
     table: [[i32; 64]; 6],

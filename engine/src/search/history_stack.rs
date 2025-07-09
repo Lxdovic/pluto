@@ -1,4 +1,4 @@
-use shakmaty::zobrist::Zobrist64;
+use crate::chess::Zobrist64;
 
 pub struct HistoryStack {
     pub stack: Vec<HistoryStackEntry>,
