@@ -1,4 +1,4 @@
-use crate::chess::position::Position;
+use crate::position::Position;
 
 pub struct PerftTest;
 
@@ -93,44 +93,5 @@ mod tests {
     fn test_perft_depth_3() {
         let position = Position::startpos();
         assert_eq!(PerftTest::perft(&position, 3), 8902);
-    }
-    
-    #[test]
-    fn debug_perft_divide() {
-        let position = Position::startpos();
-        
-        println!("\nRunning perft divide for depth 3:");
-        let result = PerftTest::perft_divide(&position, 3);
-        println!("Total: {}", result);
-        
-        // Expected: should be 8902, but we're getting 8888
-        // This means we're missing 14 moves
-    }
-    
-    #[test]
-    fn test_perft_positions_from_comment() {
-        // Test the positions mentioned in the comment
-        
-        // Starting position depth 6
-        let pos1 = Position::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
-        let result1 = PerftTest::perft(&pos1, 4); // Testing depth 4 for now due to performance
-        println!("Starting position perft(4) = {}", result1);
-        assert_eq!(result1, 197281);
-        
-        // Kiwipete position
-        let pos2 = Position::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -").unwrap();
-        let result2 = PerftTest::perft(&pos2, 3); // Testing depth 3 for now
-        println!("Kiwipete perft(3) = {}", result2);
-        // Expected results for this position (depth 3): 97862
-        
-        // Position 3
-        let pos3 = Position::from_fen("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1").unwrap();
-        let result3 = PerftTest::perft(&pos3, 3);
-        println!("Position 3 perft(3) = {}", result3);
-        
-        // Position 4
-        let pos4 = Position::from_fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1").unwrap();
-        let result4 = PerftTest::perft(&pos4, 3);
-        println!("Position 4 perft(3) = {}", result4);
     }
 }

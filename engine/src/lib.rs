@@ -10,14 +10,14 @@ use wasm_bindgen::prelude::*;
 use web_sys::Worker;
 
 mod bound;
-mod chess;
+pub mod chess;
 mod config;
-mod eval;
+//mod eval;
 mod logger;
 mod nnue;
-mod search;
-mod time_control;
-mod uci;
+//mod search;
+//mod time_control;
+//mod uci;
 
 #[cfg(target_arch = "wasm32")]
 use std::sync::{LazyLock, Mutex};

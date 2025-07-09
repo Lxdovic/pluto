@@ -1,16 +1,15 @@
-use crate::chess::types::{Square, Color, Role, Move, MoveList};
-use crate::chess::bitboard::ATTACK_TABLES;
-use crate::chess::magics::MAGIC_TABLES;
+use crate::types::{Square, Color, Role, Move, MoveList};
+use crate::bitboard::ATTACK_TABLES;
+use crate::magics::MAGIC_TABLES;
 
 pub struct MoveGenerator;
 
 impl MoveGenerator {
     /// Generate all legal moves for the given position
-    pub fn generate_legal_moves(position: &crate::chess::Position) -> MoveList {
+    pub fn generate_legal_moves(position: &crate::Position) -> MoveList {
         let mut moves = Vec::new();
         
         Self::generate_pawn_moves(position, &mut moves);
-        Self::generate_pawn_captures(position, &mut moves);
         Self::generate_knight_moves(position, &mut moves);
         Self::generate_bishop_moves(position, &mut moves);
         Self::generate_rook_moves(position, &mut moves);
@@ -25,7 +24,7 @@ impl MoveGenerator {
     }
 
     /// Generate only capture moves
-    pub fn generate_capture_moves(position: &crate::chess::Position) -> MoveList {
+    pub fn generate_capture_moves(position: &crate::Position) -> MoveList {
         let mut moves = Vec::new();
         
         Self::generate_pawn_captures(position, &mut moves);
@@ -41,7 +40,7 @@ impl MoveGenerator {
              .collect()
     }
 
-    fn generate_pawn_moves(position: &crate::chess::Position, moves: &mut MoveList) {
+    fn generate_pawn_moves(position: &crate::Position, moves: &mut MoveList) {
         let us = position.side_to_move();
         let pawns = position.pieces(us, Role::Pawn);
         
@@ -50,7 +49,7 @@ impl MoveGenerator {
         }
     }
 
-    fn generate_pawn_captures(position: &crate::chess::Position, moves: &mut MoveList) {
+    fn generate_pawn_captures(position: &crate::Position, moves: &mut MoveList) {
         let us = position.side_to_move();
         let pawns = position.pieces(us, Role::Pawn);
         
@@ -84,7 +83,7 @@ impl MoveGenerator {
         }
     }
 
-    fn generate_pawn_moves_from_square(position: &crate::chess::Position, square: Square, moves: &mut MoveList) {
+    fn generate_pawn_moves_from_square(position: &crate::Position, square: Square, moves: &mut MoveList) {
         let us = position.side_to_move();
         let empty = position.empty_squares();
         
@@ -125,7 +124,7 @@ impl MoveGenerator {
         // Pawn captures (handled by generate_pawn_captures when called from generate_legal_moves)
     }
 
-    fn generate_knight_moves(position: &crate::chess::Position, moves: &mut MoveList) {
+    fn generate_knight_moves(position: &crate::Position, moves: &mut MoveList) {
         let us = position.side_to_move();
         let knights = position.pieces(us, Role::Knight);
         let our_pieces = position.our_pieces();
@@ -144,7 +143,7 @@ impl MoveGenerator {
         }
     }
 
-    fn generate_knight_captures(position: &crate::chess::Position, moves: &mut MoveList) {
+    fn generate_knight_captures(position: &crate::Position, moves: &mut MoveList) {
         let us = position.side_to_move();
         let knights = position.pieces(us, Role::Knight);
         let enemies = position.enemy_pieces();
@@ -160,7 +159,7 @@ impl MoveGenerator {
         }
     }
 
-    fn generate_bishop_moves(position: &crate::chess::Position, moves: &mut MoveList) {
+    fn generate_bishop_moves(position: &crate::Position, moves: &mut MoveList) {
         let us = position.side_to_move();
         let bishops = position.pieces(us, Role::Bishop);
         let our_pieces = position.our_pieces();
@@ -180,7 +179,7 @@ impl MoveGenerator {
         }
     }
 
-    fn generate_bishop_captures(position: &crate::chess::Position, moves: &mut MoveList) {
+    fn generate_bishop_captures(position: &crate::Position, moves: &mut MoveList) {
         let us = position.side_to_move();
         let bishops = position.pieces(us, Role::Bishop);
         let enemies = position.enemy_pieces();
@@ -197,7 +196,7 @@ impl MoveGenerator {
         }
     }
 
-    fn generate_rook_moves(position: &crate::chess::Position, moves: &mut MoveList) {
+    fn generate_rook_moves(position: &crate::Position, moves: &mut MoveList) {
         let us = position.side_to_move();
         let rooks = position.pieces(us, Role::Rook);
         let our_pieces = position.our_pieces();
@@ -217,7 +216,7 @@ impl MoveGenerator {
         }
     }
 
-    fn generate_rook_captures(position: &crate::chess::Position, moves: &mut MoveList) {
+    fn generate_rook_captures(position: &crate::Position, moves: &mut MoveList) {
         let us = position.side_to_move();
         let rooks = position.pieces(us, Role::Rook);
         let enemies = position.enemy_pieces();
@@ -234,7 +233,7 @@ impl MoveGenerator {
         }
     }
 
-    fn generate_queen_moves(position: &crate::chess::Position, moves: &mut MoveList) {
+    fn generate_queen_moves(position: &crate::Position, moves: &mut MoveList) {
         let us = position.side_to_move();
         let queens = position.pieces(us, Role::Queen);
         let our_pieces = position.our_pieces();
@@ -254,7 +253,7 @@ impl MoveGenerator {
         }
     }
 
-    fn generate_queen_captures(position: &crate::chess::Position, moves: &mut MoveList) {
+    fn generate_queen_captures(position: &crate::Position, moves: &mut MoveList) {
         let us = position.side_to_move();
         let queens = position.pieces(us, Role::Queen);
         let enemies = position.enemy_pieces();
@@ -271,7 +270,7 @@ impl MoveGenerator {
         }
     }
 
-    fn generate_king_moves(position: &crate::chess::Position, moves: &mut MoveList) {
+    fn generate_king_moves(position: &crate::Position, moves: &mut MoveList) {
         let us = position.side_to_move();
         let king_square = position.king_square(us);
         let our_pieces = position.our_pieces();
@@ -288,7 +287,7 @@ impl MoveGenerator {
         }
     }
 
-    fn generate_king_captures(position: &crate::chess::Position, moves: &mut MoveList) {
+    fn generate_king_captures(position: &crate::Position, moves: &mut MoveList) {
         let us = position.side_to_move();
         let king_square = position.king_square(us);
         let enemies = position.enemy_pieces();
@@ -302,7 +301,7 @@ impl MoveGenerator {
         }
     }
 
-    fn generate_castling_moves(position: &crate::chess::Position, moves: &mut MoveList) {
+    fn generate_castling_moves(position: &crate::Position, moves: &mut MoveList) {
         let us = position.side_to_move();
         let rights = position.castling_rights();
         
@@ -323,7 +322,7 @@ impl MoveGenerator {
         }
     }
 
-    fn can_castle_king_side(position: &crate::chess::Position, color: Color) -> bool {
+    fn can_castle_king_side(position: &crate::Position, color: Color) -> bool {
         let rank = if color == Color::White { 0 } else { 7 };
         let king_square = Square::from_coords(4, rank);
         
@@ -346,7 +345,7 @@ impl MoveGenerator {
         true
     }
 
-    fn can_castle_queen_side(position: &crate::chess::Position, color: Color) -> bool {
+    fn can_castle_queen_side(position: &crate::Position, color: Color) -> bool {
         let rank = if color == Color::White { 0 } else { 7 };
         let king_square = Square::from_coords(4, rank);
         
@@ -369,7 +368,7 @@ impl MoveGenerator {
         true
     }
 
-    fn is_legal_move(position: &crate::chess::Position, mov: &Move) -> bool {
+    fn is_legal_move(position: &crate::Position, mov: &Move) -> bool {
         // Make the move temporarily and check if our king is in check
         let mut temp_position = *position;
         temp_position.make_move_unchecked(mov);
@@ -378,7 +377,7 @@ impl MoveGenerator {
         !Self::is_square_attacked(&temp_position, our_king, !position.side_to_move())
     }
 
-    pub fn is_square_attacked(position: &crate::chess::Position, square: Square, by_color: Color) -> bool {
+    pub fn is_square_attacked(position: &crate::Position, square: Square, by_color: Color) -> bool {
         let all_pieces = position.all_pieces();
         
         // Check pawn attacks
