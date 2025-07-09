@@ -194,6 +194,7 @@ name = "engine"
 version = "1.0.0"
 dependencies = [
  "chrono",
+ "lazy_static",
  "queues",
  "serde",
  "serde_derive",

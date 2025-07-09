@@ -10,6 +10,7 @@ use wasm_bindgen::prelude::*;
 use web_sys::Worker;
 
 mod bound;
+mod chess;
 mod config;
 mod eval;
 mod logger;
