@@ -1,4 +1,5 @@
-use crate::chess::{Position, Square, Color, Role};
+use crate::chess::position::Position;
+use crate::chess::types::{Square, Color, Role};
 
 pub fn test_basic_setup() {
     println!("Testing basic position setup...");
@@ -36,7 +37,8 @@ pub fn test_basic_setup() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::chess::{Position, Color, Role, Square};
+    use crate::chess::position::Position;
+    use crate::chess::types::{Color, Role, Square};
 
     #[test]
     fn test_position_creation() {

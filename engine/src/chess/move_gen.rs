@@ -1,7 +1,6 @@
-use crate::chess::{
-    Square, Color, Role, Move, MoveList,
-    ATTACK_TABLES, MAGIC_TABLES
-};
+use crate::chess::types::{Square, Color, Role, Move, MoveList};
+use crate::chess::bitboard::ATTACK_TABLES;
+use crate::chess::magics::MAGIC_TABLES;
 
 pub struct MoveGenerator;
 

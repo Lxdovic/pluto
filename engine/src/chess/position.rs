@@ -1,7 +1,7 @@
-use crate::chess::{
-    Bitboard, Square, Color, Role, Piece, Move, MoveType, MoveList, CastlingRights,
-    MoveGenerator, Zobrist64
-};
+use crate::chess::bitboard::Bitboard;
+use crate::chess::types::{Square, Color, Role, Piece, Move, MoveType, MoveList, CastlingRights};
+use crate::chess::move_gen::MoveGenerator;
+use crate::chess::zobrist::Zobrist64;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Position {
@@ -11,11 +11,11 @@ pub struct Position {
     all_pieces: Bitboard,
     
     // Game state
-    side_to_move: Color,
-    castling_rights: CastlingRights,
-    en_passant_square: Option<Square>,
-    halfmove_clock: u8,
-    fullmove_number: u16,
+    pub side_to_move: Color,
+    pub castling_rights: CastlingRights,
+    pub en_passant_square: Option<Square>,
+    pub halfmove_clock: u8,
+    pub fullmove_number: u16,
     
     // Zobrist hash
     hash: Zobrist64,
@@ -89,7 +89,7 @@ impl Position {
         self.update_composite_bitboards();
     }
 
-    fn place_piece(&mut self, piece: Piece, square: Square) {
+    pub fn place_piece(&mut self, piece: Piece, square: Square) {
         let color_idx = piece.color as usize;
         let piece_idx = (piece.role as usize) - 1;
         
@@ -111,7 +111,7 @@ impl Position {
         None
     }
 
-    fn update_composite_bitboards(&mut self) {
+    pub fn update_composite_bitboards(&mut self) {
         self.color_bitboards[Color::White as usize] = Bitboard::EMPTY;
         self.color_bitboards[Color::Black as usize] = Bitboard::EMPTY;
 
@@ -326,7 +326,7 @@ impl Position {
         self.hash
     }
 
-    fn compute_hash(&mut self) {
+    pub fn compute_hash(&mut self) {
         // This is a placeholder - full Zobrist hashing will be implemented in zobrist.rs
         self.hash = Zobrist64::default();
     }
@@ -365,6 +365,10 @@ impl Position {
 
     pub fn fullmove_number(&self) -> u16 {
         self.fullmove_number
+    }
+
+    pub fn from_fen(fen: &str) -> Result<Self, crate::chess::fen::FenError> {
+        crate::chess::fen::Fen::new(fen).into_position()
     }
 }
 

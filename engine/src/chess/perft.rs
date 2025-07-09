@@ -1,4 +1,4 @@
-use crate::chess::{Position, MoveGenerator};
+use crate::chess::position::Position;
 
 pub struct PerftTest;
 

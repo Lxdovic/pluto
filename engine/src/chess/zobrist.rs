@@ -1,4 +1,4 @@
-use crate::chess::{Position};
+use crate::chess::position::Position;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 pub struct Zobrist64(pub u64);
