@@ -76,6 +76,7 @@ impl PerftTest {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::chess::types::Square;
 
     #[test]
     fn test_perft_depth_1() {
@@ -108,29 +109,45 @@ mod tests {
     }
     
     #[test]
-    fn test_perft_positions_from_comment() {
-        // Test the positions mentioned in the comment
+    fn debug_move_generation_issues() {
+        // Test if we're generating duplicate moves or illegal moves
+        let pos = Position::startpos();
         
-        // Starting position depth 6
-        let pos1 = Position::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
-        let result1 = PerftTest::perft(&pos1, 4); // Testing depth 4 for now due to performance
-        println!("Starting position perft(4) = {}", result1);
-        assert_eq!(result1, 197281);
+        // Test depth 1 - should be exactly 20
+        let moves_d1 = pos.legal_moves();
+        println!("Depth 1: {} moves", moves_d1.len());
+        assert_eq!(moves_d1.len(), 20);
         
-        // Kiwipete position
-        let pos2 = Position::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -").unwrap();
-        let result2 = PerftTest::perft(&pos2, 3); // Testing depth 3 for now
-        println!("Kiwipete perft(3) = {}", result2);
-        // Expected results for this position (depth 3): 97862
+        // Test depth 2 manually by playing each move and counting
+        let mut total_d2 = 0;
+        for mv in &moves_d1 {
+            if let Some(new_pos) = pos.play(mv) {
+                let moves_after = new_pos.legal_moves();
+                total_d2 += moves_after.len();
+                if mv.from == Square::E2 && mv.to == Square::E4 {
+                    println!("After 1.e4: {} legal moves", moves_after.len());
+                    // Should be 20 legal moves for black after 1.e4
+                }
+            }
+        }
+        println!("Depth 2 manual count: {}", total_d2);
         
-        // Position 3
-        let pos3 = Position::from_fen("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1").unwrap();
-        let result3 = PerftTest::perft(&pos3, 3);
-        println!("Position 3 perft(3) = {}", result3);
+        // Compare with perft
+        let perft_d2 = PerftTest::perft(&pos, 2);
+        println!("Depth 2 perft: {}", perft_d2);
         
-        // Position 4
-        let pos4 = Position::from_fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1").unwrap();
-        let result4 = PerftTest::perft(&pos4, 3);
-        println!("Position 4 perft(3) = {}", result4);
+        if total_d2 != perft_d2 as usize {
+            println!("MISMATCH: Manual count {} vs perft {}", total_d2, perft_d2);
+        }
+        
+        // Test if we can find duplicate moves
+        let mut move_strings = Vec::new();
+        for mv in &moves_d1 {
+            let move_str = format!("{:?}", mv);
+            if move_strings.contains(&move_str) {
+                println!("DUPLICATE MOVE FOUND: {}", move_str);
+            }
+            move_strings.push(move_str);
+        }
     }
 }

@@ -381,7 +381,7 @@ impl MoveGenerator {
     pub fn is_square_attacked(position: &crate::chess::Position, square: Square, by_color: Color) -> bool {
         let all_pieces = position.all_pieces();
         
-        // Check pawn attacks
+        // Check pawn attacks - use opposite color's attack pattern to find attacking squares
         let pawn_attacks = ATTACK_TABLES.pawn_attacks[(!by_color) as usize][square.index()];
         if (pawn_attacks & position.pieces(by_color, Role::Pawn)).pop_count() > 0 {
             return true;
