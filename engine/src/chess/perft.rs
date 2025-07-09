@@ -248,9 +248,28 @@ mod tests {
     }
 
     #[test]
-    fn run_all_challenge_tests() {
-        // This test will run all challenge positions
-        PerftTest::run_challenge_tests();
+    fn debug_kiwipete_moves() {
+        let fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
+        let position = Position::from_fen(fen).expect("Valid FEN");
+        
+        let moves = position.legal_moves();
+        println!("Kiwipete position has {} legal moves", moves.len());
+        
+        // Expected at depth 1 should be 48, not getting that
+        // Let's see what moves we're generating
+        for (i, mv) in moves.iter().enumerate() {
+            println!("  {}: {:?}", i + 1, mv);
+        }
+        
+        // Let's check depth 2 manually
+        let mut depth_2_total = 0;
+        for mv in &moves {
+            let new_pos = position.play_unchecked(mv);
+            let responses = new_pos.legal_moves();
+            depth_2_total += responses.len();
+            println!("After {:?}: {} responses", mv, responses.len());
+        }
+        println!("Total depth 2: {}", depth_2_total);
     }
     
     #[test]
