@@ -251,8 +251,8 @@ impl Position {
             }
         }
         
-        // Update castling rights
-        self.update_castling_rights(mov);
+        // Update castling rights (pass the piece since it's already been removed from the board)
+        self.update_castling_rights(mov, piece);
         
         // Update en passant square
         self.update_en_passant_square(mov, piece);
@@ -278,16 +278,12 @@ impl Position {
         self.compute_hash();
     }
 
-    fn update_castling_rights(&mut self, mov: &Move) {
-        let piece = self.piece_at(mov.from);
-        
+    fn update_castling_rights(&mut self, mov: &Move, piece: Piece) {
         // If king moves, remove all castling rights for that color
-        if let Some(piece) = piece {
-            if piece.role == Role::King {
-                self.castling_rights.remove_king_side(piece.color);
-                self.castling_rights.remove_queen_side(piece.color);
-                return;
-            }
+        if piece.role == Role::King {
+            self.castling_rights.remove_king_side(piece.color);
+            self.castling_rights.remove_queen_side(piece.color);
+            return;
         }
         
         // If rook moves from starting square, remove appropriate castling right
