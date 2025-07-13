@@ -401,41 +401,39 @@ mod tests {
     }
 
     #[test]
-    fn debug_pawn_attack_logic() {
-        // Test the pawn attack logic with a simple position
-        use crate::chess::bitboard::ATTACK_TABLES;
-        use crate::chess::types::{Square, Color, Move};
+    fn debug_perft_divide_starting_position() {
+        // Use perft divide to see which moves are causing the issue
+        println!("=== Perft Divide at Depth 3 (Starting Position) ===");
+        let position = Position::startpos();
         
-        println!("=== Testing Pawn Attack Logic ===");
+        // This should pass since depth 3 works
+        let total = PerftTest::perft_divide(&position, 3);
+        println!("Total depth 3: {}", total);
         
-        // Test case: White pawn on e4, check if it attacks d5 and f5
-        let e4 = Square::E4;
-        let d5 = Square::D5;
-        let f5 = Square::F5;
-        let e5 = Square::E5;
+        // Expected depth 3 is 8902, so this should work
+        assert_eq!(total, 8902);
+    }
+
+    #[test]
+    fn debug_perft_divide_kiwipete() {
+        // Use perft divide to see which moves are causing the issue in Kiwipete
+        println!("=== Perft Divide at Depth 1 (Kiwipete) ===");
+        let fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
+        let position = Position::from_fen(fen).expect("Valid FEN");
         
-        // What squares does a white pawn on e4 attack?
-        let white_e4_attacks = ATTACK_TABLES.pawn_attacks[Color::White as usize][e4.index()];
-        println!("White pawn on e4 attacks: {}", white_e4_attacks.pop_count());
-        println!("  Attacks d5: {}", white_e4_attacks.is_set(d5));
-        println!("  Attacks f5: {}", white_e4_attacks.is_set(f5));
-        println!("  Attacks e5: {}", white_e4_attacks.is_set(e5));
+        // This should show 48 moves and their individual perft(0) = 1
+        let total = PerftTest::perft_divide(&position, 1);
+        println!("Total depth 1: {}", total);
         
-        // Now test the reverse: if we want to check if d5 is attacked by white pawns,
-        // what squares should we look at?
-        let reverse_attacks = ATTACK_TABLES.pawn_attacks[(!Color::White) as usize][d5.index()];
-        println!("To attack d5, white pawns should be on squares with {} bits set", reverse_attacks.pop_count());
-        println!("  Should white pawn be on e4? {}", reverse_attacks.is_set(e4));
+        // Expected depth 1 is 48
+        assert_eq!(total, 48);
         
-        // Test with a simple position
-        let mut test_pos = Position::startpos();
-        // Move a pawn to e4
-        let e2_e4 = Move::new(Square::E2, Square::E4);
-        test_pos.make_move_unchecked(&e2_e4);
+        println!("\n=== Perft Divide at Depth 2 (Kiwipete) ===");
+        // This is where the issue appears - we get 1905 instead of 2039
+        let total_d2 = PerftTest::perft_divide(&position, 2);
+        println!("Total depth 2: {}", total_d2);
         
-        println!("After 1.e4:");
-        println!("  Is d5 attacked by white? {}", crate::chess::move_gen::MoveGenerator::is_square_attacked(&test_pos, d5, Color::White));
-        println!("  Is f5 attacked by white? {}", crate::chess::move_gen::MoveGenerator::is_square_attacked(&test_pos, f5, Color::White));
-        println!("  Is e5 attacked by white? {}", crate::chess::move_gen::MoveGenerator::is_square_attacked(&test_pos, e5, Color::White));
+        // We expect 2039 but get 1905, so this will fail but show us which moves have fewer responses
+        // Don't assert here so we can see the full output
     }
 }
