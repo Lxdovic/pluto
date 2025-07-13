@@ -350,4 +350,92 @@ mod tests {
         let perft_d4 = PerftTest::perft(&pos, 4);
         println!("Depth 4 perft: {} (expected: 197281)", perft_d4);
     }
+
+    #[test]
+    fn debug_consistency_issue() {
+        // Test the exact Kiwipete issue more thoroughly
+        let fen = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -";
+        let position = Position::from_fen(fen).expect("Valid FEN");
+        
+        println!("=== Debugging Kiwipete Consistency ===");
+        
+        let moves = position.legal_moves();
+        println!("Depth 1: {} moves (expected: 48)", moves.len());
+        
+        // Test a few moves specifically to see if there's an issue
+        let mut problematic_moves = Vec::new();
+        for mv in &moves {
+            // Test with both play() and play_unchecked() 
+            let result1 = position.play(mv);
+            let result2 = position.play_unchecked(mv);
+            
+            if result1.is_none() {
+                println!("ERROR: Move {:?} was generated but play() returns None", mv);
+                problematic_moves.push(mv);
+            } else {
+                let pos1 = result1.unwrap();
+                let moves1 = pos1.legal_moves();
+                let moves2 = result2.legal_moves();
+                
+                if moves1.len() != moves2.len() {
+                    println!("INCONSISTENCY: Move {:?} - play(): {} moves, play_unchecked(): {} moves", 
+                             mv, moves1.len(), moves2.len());
+                }
+            }
+        }
+        
+        if !problematic_moves.is_empty() {
+            println!("Found {} problematic moves", problematic_moves.len());
+        }
+        
+        // Count depth 2 using only validated moves
+        let mut validated_d2 = 0;
+        for mv in &moves {
+            if let Some(new_pos) = position.play(mv) {
+                validated_d2 += new_pos.legal_moves().len();
+            }
+        }
+        
+        println!("Validated depth 2 count: {}", validated_d2);
+        println!("Perft depth 2: {}", PerftTest::perft(&position, 2));
+    }
+
+    #[test]
+    fn debug_pawn_attack_logic() {
+        // Test the pawn attack logic with a simple position
+        use crate::chess::bitboard::ATTACK_TABLES;
+        use crate::chess::types::{Square, Color, Move};
+        
+        println!("=== Testing Pawn Attack Logic ===");
+        
+        // Test case: White pawn on e4, check if it attacks d5 and f5
+        let e4 = Square::E4;
+        let d5 = Square::D5;
+        let f5 = Square::F5;
+        let e5 = Square::E5;
+        
+        // What squares does a white pawn on e4 attack?
+        let white_e4_attacks = ATTACK_TABLES.pawn_attacks[Color::White as usize][e4.index()];
+        println!("White pawn on e4 attacks: {}", white_e4_attacks.pop_count());
+        println!("  Attacks d5: {}", white_e4_attacks.is_set(d5));
+        println!("  Attacks f5: {}", white_e4_attacks.is_set(f5));
+        println!("  Attacks e5: {}", white_e4_attacks.is_set(e5));
+        
+        // Now test the reverse: if we want to check if d5 is attacked by white pawns,
+        // what squares should we look at?
+        let reverse_attacks = ATTACK_TABLES.pawn_attacks[(!Color::White) as usize][d5.index()];
+        println!("To attack d5, white pawns should be on squares with {} bits set", reverse_attacks.pop_count());
+        println!("  Should white pawn be on e4? {}", reverse_attacks.is_set(e4));
+        
+        // Test with a simple position
+        let mut test_pos = Position::startpos();
+        // Move a pawn to e4
+        let e2_e4 = Move::new(Square::E2, Square::E4);
+        test_pos.make_move_unchecked(&e2_e4);
+        
+        println!("After 1.e4:");
+        println!("  Is d5 attacked by white? {}", crate::chess::move_gen::MoveGenerator::is_square_attacked(&test_pos, d5, Color::White));
+        println!("  Is f5 attacked by white? {}", crate::chess::move_gen::MoveGenerator::is_square_attacked(&test_pos, f5, Color::White));
+        println!("  Is e5 attacked by white? {}", crate::chess::move_gen::MoveGenerator::is_square_attacked(&test_pos, e5, Color::White));
+    }
 }
