@@ -1,6 +1,6 @@
 # Build executables for Carp releases. Base rule is reserved for OpenBench
-EXE   := Pluto
-LXE   := Pluto
+EXE   := Pluto_1.0.1
+LXE   := Pluto_1.0.1
 _THIS := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 TMPDIR := $(_THIS)/tmp
 

@@ -191,7 +191,7 @@ dependencies = [
 
 [[package]]
 name = "engine"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "chrono",
  "queues",
@@ -337,7 +337,7 @@ checksum = "8456b021dfc471484f59d58babbe38656d1714bc96a75cfb12a5bfd976b8a829"
 
 [[package]]
 name = "nnue"
-version = "0.1.0"
+version = "1.0.1"
 dependencies = [
  "bullet-utils",
  "bullet_lib",

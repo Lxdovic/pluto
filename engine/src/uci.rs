@@ -475,8 +475,8 @@ impl UciController {
     }
 
     fn handle_uci(&self) {
-        Logger::log(r#"id name Pluto"#);
-        Logger::log(r#"id author CastledChess"#);
+        Logger::log(r#"id name Pluto 1.0.1"#);
+        Logger::log(r#"id author Lxdovic"#);
 
         Logger::log(format!("{}", self.search.state.cfg.move_overhead).as_str());
         Logger::log(format!("{}", self.search.state.cfg.threads).as_str());
