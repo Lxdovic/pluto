@@ -1,3 +1,20 @@
+/* Pluto, UCI chess engine
+   Copyright (C) 2025 Ludovic Debever
+
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 use std::process::exit;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Sender};
@@ -507,8 +524,8 @@ impl UciController {
     }
 
     fn handle_uci(&self) {
-        Logger::log(r#"id name Pluto"#);
-        Logger::log(r#"id author CastledChess"#);
+        Logger::log(r#"id name Pluto 1.0.1"#);
+        Logger::log(r#"id author Lxdovic"#);
 
         Logger::log(format!("{}", self.search.state.cfg.move_overhead).as_str());
         Logger::log(format!("{}", self.search.state.cfg.threads).as_str());

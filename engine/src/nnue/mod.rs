@@ -1,3 +1,5 @@
+// Code taken from bullet examples and modified
+
 use shakmaty::{Board, Piece, Square};
 
 pub const FEATURES: usize = 768;
