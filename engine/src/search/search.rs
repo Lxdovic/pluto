@@ -208,7 +208,8 @@ impl Search {
             return entry.score;
         }
 
-        let static_eval = Eval::nnue_eval(&self.state.nnue, pos);
+        // let static_eval = Eval::nnue_eval(&self.state.nnue, pos);
+        let static_eval = Eval::eval(pos);
 
         /* Improving */
         let improving = match ply {
@@ -403,7 +404,8 @@ impl Search {
     fn quiesce(&mut self, pos: &Chess, mut alpha: i32, beta: i32, limit: u8) -> i32 {
         self.state.info.nodes += 1;
 
-        let stand_pat = Eval::nnue_eval(&self.state.nnue, pos);
+        // let stand_pat = Eval::nnue_eval(&self.state.nnue, pos);
+        let stand_pat = Eval::eval(pos);
 
         if limit == 0 {
             return stand_pat;
