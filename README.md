@@ -21,7 +21,7 @@ by [Lxdovic](https://github.com/Lxdovic)
 
 | Version        | Date        | Estimated ELO | CCRL |
 | -------------- | ----------- | ------------- | ---- |
-| 1.0.0          | 11 May 2025 | 2870          | 2859 |
+| 1.0.0          | 11 May 2025 | 2870          | 2872 |
 
 ## Testing
 
