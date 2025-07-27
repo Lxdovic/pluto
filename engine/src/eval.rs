@@ -17,7 +17,14 @@
 
 /// Position evaluation module containing piece-square tables and evaluation functions.
 use crate::nnue::{NNUEState, NNUE};
-use shakmaty::{Chess, Color, Position};
+use shakmaty::{attacks, Chess, Color, Piece, Position, Role, Square};
+
+#[derive(Default)]
+pub struct EvalState {
+    phase: i32,
+    mg: i32,
+    eg: i32,
+}
 
 pub struct Eval {}
 
@@ -32,42 +39,56 @@ impl Eval {
         false
     }
 
-    pub fn eval(pos: &Chess) -> i32 {
-        let mut mg_eval = 0;
-        let mut eg_eval = 0;
-        let mut phase = 0;
-        let board = pos.board().clone();
-        let turn = pos.turn();
+    fn mg_mobility(pos: &Chess, sq: Square, piece: Piece) -> i32 {
+        let mut mob = 0;
 
-        for (sq, piece) in board {
-            let piece_index = (piece.role as usize - 1) * 2;
-            let square_index = sq as usize;
-
-            match piece.color {
-                Color::White => {
-                    mg_eval += MG_TABLE[piece_index][square_index];
-                    eg_eval += EG_TABLE[piece_index][square_index];
-                }
-                Color::Black => {
-                    mg_eval -= MG_TABLE[piece_index + 1][square_index];
-                    eg_eval -= EG_TABLE[piece_index + 1][square_index];
-                }
-            }
-
-            phase += GAME_PHASES[piece_index];
-        }
-
-        (mg_eval * phase + eg_eval * (24 - phase)) / 24 * if turn == Color::White { 1 } else { -1 }
-    }
-
-    pub fn nnue_eval(state: &NNUEState, pos: &Chess) -> i32 {
-        #[rustfmt::skip]
-        let (us, them) = match pos.turn() {
-            Color::White => (state.stack[state.current].white, state.stack[state.current].black),
-            Color::Black => (state.stack[state.current].black, state.stack[state.current].white),
+        match piece.role {
+            Role::Pawn => return 0,
+            Role::King => return 0,
+            _ => 0,
         };
 
-        NNUE.evaluate(&us, &them)
+        let attacks = attacks::attacks(sq, piece, pos.board().occupied());
+
+        mob += attacks.count() as i32;
+
+        mob
+    }
+
+    fn eval_white(pos: &Chess, sq: Square, piece: Piece, state: &mut EvalState) {
+        let piece_index = (piece.role as usize - 1) * 2;
+        let square_index = sq as usize;
+
+        state.mg += MG_TABLE[piece_index][square_index];
+        state.eg += EG_TABLE[piece_index][square_index];
+        state.mg += Self::mg_mobility(pos, sq, piece);
+
+        state.phase += GAME_PHASES[piece_index];
+    }
+
+    fn eval_black(pos: &Chess, sq: Square, piece: Piece, state: &mut EvalState) {
+        let piece_index = (piece.role as usize - 1) * 2 + 1;
+        let square_index = sq as usize;
+
+        state.mg -= MG_TABLE[piece_index][square_index];
+        state.eg -= EG_TABLE[piece_index][square_index];
+        state.mg -= Self::mg_mobility(pos, sq, piece);
+
+        state.phase += GAME_PHASES[piece_index];
+    }
+
+    pub fn eval(pos: &Chess) -> i32 {
+        let mut state = EvalState::default();
+
+        for (sq, piece) in pos.board() {
+            match piece.color {
+                Color::White => Self::eval_white(pos, sq, piece, &mut state),
+                Color::Black => Self::eval_black(pos, sq, piece, &mut state),
+            };
+        }
+
+        (state.mg * state.phase + state.eg * (24 - state.phase)) / 24
+            * if pos.turn() == Color::White { 1 } else { -1 }
     }
 
     pub const fn init_mg_piece_table() -> [[i32; 64]; 12] {
@@ -114,6 +135,16 @@ impl Eval {
         }
 
         eg_table
+    }
+
+    pub fn nnue_eval(state: &NNUEState, pos: &Chess) -> i32 {
+        #[rustfmt::skip]
+        let (us, them) = match pos.turn() {
+            Color::White => (state.stack[state.current].white, state.stack[state.current].black),
+            Color::Black => (state.stack[state.current].black, state.stack[state.current].white),
+        };
+
+        NNUE.evaluate(&us, &them)
     }
 }
 
