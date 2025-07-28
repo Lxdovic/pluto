@@ -17,7 +17,7 @@
 
 /// Position evaluation module containing piece-square tables and evaluation functions.
 use crate::nnue::{NNUEState, NNUE};
-use shakmaty::{attacks, Chess, Color, Piece, Position, Role, Square};
+use shakmaty::{attacks, Bitboard, Chess, Color, Piece, Position, Role, Square};
 
 #[derive(Default)]
 pub struct EvalState {
@@ -55,6 +55,30 @@ impl Eval {
         mob
     }
 
+    fn mg_rook_files(pos: &Chess, sq: Square, piece: Piece) -> i32 {
+        if piece.role == Role::Rook {
+            let board = pos.board();
+            let us = pos.turn();
+            let file = FILES_TABLE[sq.file() as usize];
+            let all_pawns = board.pawns();
+
+            if file.intersect(all_pawns).count() == 0 {
+                return 20;
+            }
+
+            let our_pawns = board.by_piece(Piece {
+                role: Role::Pawn,
+                color: us,
+            });
+
+            if file.intersect(our_pawns).count() == 0 {
+                return 10;
+            }
+        }
+
+        0
+    }
+
     fn eval_white(pos: &Chess, sq: Square, piece: Piece, state: &mut EvalState) {
         let piece_index = (piece.role as usize - 1) * 2;
         let square_index = sq as usize;
@@ -62,6 +86,7 @@ impl Eval {
         state.mg += MG_TABLE[piece_index][square_index];
         state.eg += EG_TABLE[piece_index][square_index];
         state.mg += Self::mg_mobility(pos, sq, piece);
+        state.mg += Self::mg_rook_files(pos, sq, piece);
 
         state.phase += GAME_PHASES[piece_index];
     }
@@ -73,6 +98,7 @@ impl Eval {
         state.mg -= MG_TABLE[piece_index][square_index];
         state.eg -= EG_TABLE[piece_index][square_index];
         state.mg -= Self::mg_mobility(pos, sq, piece);
+        state.mg -= Self::mg_rook_files(pos, sq, piece);
 
         state.phase += GAME_PHASES[piece_index];
     }
@@ -166,6 +192,17 @@ const MG_PAWN: [i32; 64] = [
     -26,  -4,  -4, -10,   3,   3, 33, -12,
     -35,  -1, -20, -23, -15,  24, 38, -22,
       0,   0,   0,   0,   0,   0,  0,   0,
+];
+
+const FILES_TABLE: [Bitboard; 8] = [
+    Bitboard(0x101010101010101),
+    Bitboard(0x202020202020202),
+    Bitboard(0x404040404040404),
+    Bitboard(0x808080808080808),
+    Bitboard(0x1010101010101010),
+    Bitboard(0x2020202020202020),
+    Bitboard(0x4040404040404040),
+    Bitboard(0x8080808080808080),
 ];
 
 #[rustfmt::skip]
