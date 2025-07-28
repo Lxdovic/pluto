@@ -4,6 +4,8 @@ LXE   := Pluto_1.0.1
 _THIS := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 TMPDIR := $(_THIS)/tmp
 
+$(shell mkdir -p $(TMPDIR))
+
 ifeq ($(OS),Windows_NT)
 	EXT := .exe
 	VER := win
