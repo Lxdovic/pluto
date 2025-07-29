@@ -146,7 +146,7 @@ impl Search {
                 break;
             }
 
-            best_move = Some(self.state.pv.get_best_move().unwrap());
+            best_move = self.state.pv.get_best_move();
 
             let elapsed = self.state.tc.elapsed();
             let pv = self.state.pv.collect();
@@ -162,6 +162,10 @@ impl Search {
                     pv.join(" ")
                 ));
             }
+        }
+
+        if best_move.is_none() {
+            best_move = self.state.pv.get_best_move();
         }
 
         if print {
@@ -182,7 +186,7 @@ impl Search {
     ) -> i32 {
         self.state.pv.update_length(ply);
 
-        if self.state.tc.is_time_up() {
+        if self.state.info.nodes % 2048 == 0 && self.state.tc.is_time_up() {
             return 0;
         }
 
