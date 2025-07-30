@@ -39,7 +39,7 @@ impl Eval {
         false
     }
 
-    fn mg_mobility(pos: &Chess, sq: Square, piece: Piece) -> i32 {
+    fn mobility(pos: &Chess, sq: Square, piece: Piece) -> i32 {
         let mut mob = 0;
 
         match piece.role {
@@ -83,10 +83,13 @@ impl Eval {
         let piece_index = (piece.role as usize - 1) * 2;
         let square_index = sq as usize;
 
+        let mobility = Self::mobility(pos, sq, piece);
+
         state.mg += MG_TABLE[piece_index][square_index];
         state.eg += EG_TABLE[piece_index][square_index];
-        state.mg += Self::mg_mobility(pos, sq, piece);
         state.mg += Self::mg_rook_files(pos, sq, piece);
+        state.mg += mobility;
+        state.eg += mobility;
 
         state.phase += GAME_PHASES[piece_index];
     }
@@ -95,10 +98,13 @@ impl Eval {
         let piece_index = (piece.role as usize - 1) * 2 + 1;
         let square_index = sq as usize;
 
+        let mobility = Self::mobility(pos, sq, piece);
+
         state.mg -= MG_TABLE[piece_index][square_index];
         state.eg -= EG_TABLE[piece_index][square_index];
-        state.mg -= Self::mg_mobility(pos, sq, piece);
         state.mg -= Self::mg_rook_files(pos, sq, piece);
+        state.mg -= mobility;
+        state.eg -= mobility;
 
         state.phase += GAME_PHASES[piece_index];
     }
