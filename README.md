@@ -1,6 +1,11 @@
 
 # Pluto Chess Engine
 
+<picture>
+ <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/26b61936-4bdd-40c6-a189-da45de028821">
+ <img alt="Shows an illustrated sun in light color mode and a moon with stars in dark color mode." src="https://github.com/user-attachments/assets/50e5b2e0-4d13-48ca-bb30-53bcfeb64fab">
+</picture>
+
 by [Lxdovic](https://github.com/Lxdovic)
 
 ## Table of Contents
