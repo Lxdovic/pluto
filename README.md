@@ -1,7 +1,15 @@
 
 # Pluto Chess Engine
-
-by [Lxdovic](https://github.com/Lxdovic)
+<div align="center">
+  <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/26b61936-4bdd-40c6-a189-da45de028821">
+   <img width="600" alt="Shows an illustrated sun in light color mode and a moon with stars in dark color mode." src="https://github.com/user-attachments/assets/50e5b2e0-4d13-48ca-bb30-53bcfeb64fab">
+  </picture>
+  
+  [![License][license-badge]][license-link]
+  [![Release][release-badge]][release-link]
+  [![Commits][commits-badge]][commits-link]
+</div>
 
 ## Table of Contents
 
@@ -100,3 +108,10 @@ Pluto was built using these resources and tools
 - [Bullet](https://github.com/jw1912/bullet) -> great tool for building NNUEs
 - [Stockfish](https://stockfishchess.org/) -> some implementation examples and ideas
 
+[license-badge]: https://img.shields.io/github/license/Lxdovic/Pluto?style=for-the-badge
+[release-badge]: https://img.shields.io/github/v/release/Lxdovic/Pluto?style=for-the-badge
+[commits-badge]: https://img.shields.io/github/commits-since/Lxdovic/Pluto/latest?style=for-the-badge
+
+[license-link]: https://github.com/Lxdovic/Pluto/blob/main/LICENSE
+[release-link]: https://github.com/Lxdovic/Pluto/releases/latest
+[commits-link]: https://github.com/Lxdovic/Pluto/commits/dev

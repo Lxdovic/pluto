@@ -117,7 +117,6 @@ macro_rules! make_config {
                 }
             }
 
-
             #[cfg(feature = "tuning")]
             pub fn all_spsa(&self) -> Vec<String> {
                 vec![
