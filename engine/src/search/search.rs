@@ -405,6 +405,9 @@ impl Search {
     }
 
     fn quiesce(&mut self, pos: &Chess, mut alpha: i32, beta: i32, limit: u8) -> i32 {
+        if self.state.info.nodes % 2048 == 0 && self.state.tc.is_time_up() {
+            return 0;
+        }
         self.state.info.nodes += 1;
 
         let stand_pat = Eval::nnue_eval(&self.state.nnue, pos);
