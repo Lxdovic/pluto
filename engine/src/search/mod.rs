@@ -30,18 +30,22 @@ use info::SearchInfo;
 use killers::Killers;
 use params::SearchParams;
 use pv::PvTable;
-use shakmaty::{Chess, Position};
+use shakmaty::Chess;
+#[cfg(not(feature = "classical"))]
+use shakmaty::Position;
 use tt::TranspositionTable;
 
-use crate::config::Config;
+#[cfg(not(feature = "classical"))]
+use crate::nnue::NNUEState;
 use crate::search::history_stack::HistoryStack;
-use crate::{nnue::NNUEState, time_control::time_controller::TimeController};
+use crate::{config::Config, time_control::time_controller::TimeController};
 
 pub struct SearchState {
     pub game: Chess,
     pub params: SearchParams,
     pub info: SearchInfo,
     pub tc: TimeController,
+    #[cfg(not(feature = "classical"))]
     pub nnue: NNUEState,
     pub tt: TranspositionTable,
     pub hstack: HistoryStack,
@@ -61,6 +65,7 @@ impl SearchState {
             info: SearchInfo::default(),
             tc: TimeController::default(),
             params: SearchParams::default(),
+            #[cfg(not(feature = "classical"))]
             nnue: NNUEState::from_board(Chess::default().board()),
             hstack: HistoryStack::new(),
             pv: PvTable::default(),

@@ -16,9 +16,13 @@
 */
 
 /// Position evaluation module containing piece-square tables and evaluation functions.
+#[cfg(not(feature = "classical"))]
 use crate::nnue::{NNUEState, NNUE};
-use shakmaty::{attacks, Bitboard, Chess, Color, Piece, Position, Role, Square};
+#[cfg(feature = "classical")]
+use shakmaty::{attacks, Bitboard, Piece, Role, Square};
+use shakmaty::{Chess, Color, Position};
 
+#[cfg(feature = "classical")]
 #[derive(Default)]
 pub struct EvalState {
     phase: i32,
@@ -39,6 +43,7 @@ impl Eval {
         false
     }
 
+    #[cfg(feature = "classical")]
     fn mobility(pos: &Chess, sq: Square, piece: Piece) -> i32 {
         let mut mob = 0;
 
@@ -55,6 +60,7 @@ impl Eval {
         mob
     }
 
+    #[cfg(feature = "classical")]
     fn mg_rook_files(pos: &Chess, sq: Square, piece: Piece) -> i32 {
         if piece.role == Role::Rook {
             let board = pos.board();
@@ -79,6 +85,7 @@ impl Eval {
         0
     }
 
+    #[cfg(feature = "classical")]
     fn eval_white(pos: &Chess, sq: Square, piece: Piece, state: &mut EvalState) {
         let piece_index = (piece.role as usize - 1) * 2;
         let square_index = sq as usize;
@@ -94,6 +101,7 @@ impl Eval {
         state.phase += GAME_PHASES[piece_index];
     }
 
+    #[cfg(feature = "classical")]
     fn eval_black(pos: &Chess, sq: Square, piece: Piece, state: &mut EvalState) {
         let piece_index = (piece.role as usize - 1) * 2 + 1;
         let square_index = sq as usize;
@@ -109,6 +117,7 @@ impl Eval {
         state.phase += GAME_PHASES[piece_index];
     }
 
+    #[cfg(feature = "classical")]
     pub fn eval(pos: &Chess) -> i32 {
         let mut state = EvalState::default();
 
@@ -123,6 +132,7 @@ impl Eval {
             * if pos.turn() == Color::White { 1 } else { -1 }
     }
 
+    #[cfg(feature = "classical")]
     pub const fn init_mg_piece_table() -> [[i32; 64]; 12] {
         let mut mg_table = [[0; 64]; 12];
 
@@ -146,6 +156,7 @@ impl Eval {
         mg_table
     }
 
+    #[cfg(feature = "classical")]
     pub const fn init_eg_piece_table() -> [[i32; 64]; 12] {
         let mut eg_table = [[0; 64]; 12];
 
@@ -169,6 +180,7 @@ impl Eval {
         eg_table
     }
 
+    #[cfg(not(feature = "classical"))]
     pub fn nnue_eval(state: &NNUEState, pos: &Chess) -> i32 {
         #[rustfmt::skip]
         let (us, them) = match pos.turn() {
@@ -180,26 +192,35 @@ impl Eval {
     }
 }
 
+#[cfg(feature = "classical")]
 const MG_TABLE: [[i32; 64]; 12] = Eval::init_mg_piece_table();
+#[cfg(feature = "classical")]
 const EG_TABLE: [[i32; 64]; 12] = Eval::init_eg_piece_table();
+#[cfg(feature = "classical")]
 const MG_PESTO_TABLE: [[i32; 64]; 6] = [MG_PAWN, MG_KNIGHT, MG_BISHOP, MG_ROOK, MG_QUEEN, MG_KING];
+#[cfg(feature = "classical")]
 const EG_PESTO_TABLE: [[i32; 64]; 6] = [EG_PAWN, EG_KNIGHT, EG_BISHOP, EG_ROOK, EG_QUEEN, EG_KING];
+#[cfg(feature = "classical")]
 const MG_PIECE_VALUES: [i32; 6] = [82, 337, 365, 447, 1025, 0];
+#[cfg(feature = "classical")]
 const EG_PIECE_VALUES: [i32; 6] = [94, 281, 297, 512, 936, 0];
+#[cfg(feature = "classical")]
 const GAME_PHASES: [i32; 12] = [0, 0, 1, 1, 1, 1, 2, 2, 4, 4, 0, 0];
 
+#[cfg(feature = "classical")]
 #[rustfmt::skip]
-const MG_PAWN: [i32; 64] = [
-      0,   0,   0,   0,   0,   0,  0,   0,
-     98, 134,  61,  95,  68, 126, 34, -11,
-     -6,   7,  26,  31,  65,  56, 25, -20,
-    -14,  13,   6,  21,  23,  12, 17, -23,
-    -27,  -2,  -5,  12,  17,   6, 10, -25,
-    -26,  -4,  -4, -10,   3,   3, 33, -12,
-    -35,  -1, -20, -23, -15,  24, 38, -22,
-      0,   0,   0,   0,   0,   0,  0,   0,
-];
+    const MG_PAWN: [i32; 64] = [
+          0,   0,   0,   0,   0,   0,  0,   0,
+         98, 134,  61,  95,  68, 126, 34, -11,
+         -6,   7,  26,  31,  65,  56, 25, -20,
+        -14,  13,   6,  21,  23,  12, 17, -23,
+        -27,  -2,  -5,  12,  17,   6, 10, -25,
+        -26,  -4,  -4, -10,   3,   3, 33, -12,
+        -35,  -1, -20, -23, -15,  24, 38, -22,
+          0,   0,   0,   0,   0,   0,  0,   0,
+    ];
 
+#[cfg(feature = "classical")]
 const FILES_TABLE: [Bitboard; 8] = [
     Bitboard(0x101010101010101),
     Bitboard(0x202020202020202),
@@ -211,6 +232,7 @@ const FILES_TABLE: [Bitboard; 8] = [
     Bitboard(0x8080808080808080),
 ];
 
+#[cfg(feature = "classical")]
 #[rustfmt::skip]
 const EG_PAWN: [i32; 64] = [
       0,   0,   0,   0,   0,   0,   0,   0,
@@ -223,6 +245,7 @@ const EG_PAWN: [i32; 64] = [
       0,   0,   0,   0,   0,   0,   0,   0,
 ];
 
+#[cfg(feature = "classical")]
 #[rustfmt::skip]
 const MG_KNIGHT: [i32; 64] = [
     -167, -89, -34, -49,  61, -97, -15, -107,
@@ -235,6 +258,7 @@ const MG_KNIGHT: [i32; 64] = [
     -105, -21, -58, -33, -17, -28, -19,  -23,
 ];
 
+#[cfg(feature = "classical")]
 #[rustfmt::skip]
 const EG_KNIGHT: [i32; 64] = [
     -58, -38, -13, -28, -31, -27, -63, -99,
@@ -247,6 +271,7 @@ const EG_KNIGHT: [i32; 64] = [
     -29, -51, -23, -15, -22, -18, -50, -64,
 ];
 
+#[cfg(feature = "classical")]
 #[rustfmt::skip]
 const MG_BISHOP: [i32; 64] = [
     -29,   4, -82, -37, -25, -42,   7,  -8,
@@ -259,6 +284,7 @@ const MG_BISHOP: [i32; 64] = [
     -33,  -3, -14, -21, -13, -12, -39, -21,
 ];
 
+#[cfg(feature = "classical")]
 #[rustfmt::skip]
 const EG_BISHOP: [i32; 64] = [
     -14, -21, -11,  -8, -7,  -9, -17, -24,
@@ -271,6 +297,7 @@ const EG_BISHOP: [i32; 64] = [
     -23,  -9, -23,  -5, -9, -16,  -5, -17,
 ];
 
+#[cfg(feature = "classical")]
 #[rustfmt::skip]
 const MG_ROOK: [i32; 64] = [
      32,  42,  32,  51, 63,  9,  31,  43,
@@ -283,6 +310,7 @@ const MG_ROOK: [i32; 64] = [
     -19, -13,   1,  17, 16,  7, -37, -26,
 ];
 
+#[cfg(feature = "classical")]
 #[rustfmt::skip]
 const EG_ROOK: [i32; 64] = [
     13, 10, 18, 15, 12,  12,   8,   5,
@@ -295,6 +323,7 @@ const EG_ROOK: [i32; 64] = [
     -9,  2,  3, -1, -5, -13,   4, -20,
 ];
 
+#[cfg(feature = "classical")]
 #[rustfmt::skip]
 const MG_QUEEN: [i32; 64] = [
     -28,   0,  29,  12,  59,  44,  43,  45,
@@ -307,6 +336,7 @@ const MG_QUEEN: [i32; 64] = [
      -1, -18,  -9,  10, -15, -25, -31, -50,
 ];
 
+#[cfg(feature = "classical")]
 #[rustfmt::skip]
 const EG_QUEEN: [i32; 64] = [
      -9,  22,  22,  27,  27,  19,  10,  20,
@@ -319,6 +349,7 @@ const EG_QUEEN: [i32; 64] = [
     -33, -28, -22, -43,  -5, -32, -20, -41,
 ];
 
+#[cfg(feature = "classical")]
 #[rustfmt::skip]
 const MG_KING: [i32; 64] = [
     -65,  23,  16, -15, -56, -34,   2,  13,
@@ -331,6 +362,7 @@ const MG_KING: [i32; 64] = [
     -15,  36,  12, -54,   8, -28,  24,  14,
 ];
 
+#[cfg(feature = "classical")]
 #[rustfmt::skip]
 const EG_KING: [i32; 64] = [
     -74, -35, -18, -18, -11,  15,   4, -17,

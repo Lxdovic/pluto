@@ -54,15 +54,34 @@ Pluto is tested with OpenBench, a distributed testing framework for UCI chess en
     - **Killer Moves**
     - **Transposition Tables**
 - Evaluation:
-    Pluto adopted Efficiently Updatable Neural Networks for its evaluation function quite early in development. Earlier versions were using Simple Eval/Pesto Eval
+    - **HCE** (classical build, see how to build it in #Building)
     - **NNUE (768->512)x2->1** Trained using [Bullet](https://github.com/jw1912/bullet) and Stockfish data.
 
 ## Building
 
-To build the engine, clone the repository and run the following command in your terminal:
+To build the engine, clone the repository and use one of the following options:
+
+
+### Make
+
+This will build Pluto with NNUE
 
 ```bash
 make
+```
+
+### Cargo
+
+```bash
+cargo build --release --bin engine 
+```
+
+### Classical
+
+This allows you to build Pluto without NNUE, using HCE instead
+
+```bash
+cargo build --release --bin engine --features classical
 ```
 
 ## Contributors

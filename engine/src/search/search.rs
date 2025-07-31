@@ -21,11 +21,13 @@ use std::sync::Arc;
 use crate::bound::Bound;
 use crate::eval::Eval;
 use crate::logger::Logger;
-use crate::nnue::OFF;
-use crate::nnue::ON;
+#[cfg(not(feature = "classical"))]
+use crate::nnue::{OFF, ON};
 use crate::time_control::time_mode::TimeMode;
 use shakmaty::zobrist::{Zobrist64, ZobristHash};
-use shakmaty::{CastlingMode, CastlingSide, Chess, EnPassantMode, Move, Piece, Position, Square};
+use shakmaty::{CastlingMode, Chess, EnPassantMode, Move, Position};
+#[cfg(not(feature = "classical"))]
+use shakmaty::{CastlingSide, Piece, Square};
 
 use super::move_picker::MovePicker;
 use super::SearchState;
@@ -42,71 +44,73 @@ impl Search {
     }
 
     pub fn make_move(&mut self, pos: &mut Chess, m: &Move, eval: i32) {
-        self.state.nnue.push();
-        let turn = pos.turn();
-        let board = pos.board();
+        #[cfg(not(feature = "classical"))]
+        {
+            self.state.nnue.push();
+            let turn = pos.turn();
+            let board = pos.board();
 
-        match m {
-            Move::EnPassant { from, to } => {
-                let ep_target = Square::from_coords(to.file(), from.rank()); // captured pawn
-
-                self.state
-                    .nnue
-                    .manual_update::<OFF>((!pos.turn()).pawn(), ep_target);
-            }
-
-            Move::Castle { king, rook } => {
-                let side = CastlingSide::from_queen_side(rook < king);
-                let rook_target = Square::from_coords(side.rook_to_file(), rook.rank());
-
-                self.state.nnue.move_update(turn.rook(), *rook, rook_target);
-                self.state.nnue.move_update(
-                    Piece {
-                        color: turn,
-                        role: m.role(),
-                    },
-                    m.from().unwrap(),
-                    m.to(),
-                );
-            }
-
-            Move::Normal {
-                role,
-                from,
-                capture: _capture,
-                to,
-                promotion,
-            } => {
-                if m.is_capture() {
-                    let target_piece = board.piece_at(*to).unwrap();
-                    let target_square = *to;
+            match m {
+                Move::EnPassant { from, to } => {
+                    let ep_target = Square::from_coords(to.file(), from.rank()); // captured pawn
 
                     self.state
                         .nnue
-                        .manual_update::<OFF>(target_piece, target_square);
+                        .manual_update::<OFF>((!pos.turn()).pawn(), ep_target);
                 }
 
-                let piece = Piece {
-                    color: turn,
-                    role: *role,
-                };
+                Move::Castle { king, rook } => {
+                    let side = CastlingSide::from_queen_side(rook < king);
+                    let rook_target = Square::from_coords(side.rook_to_file(), rook.rank());
 
-                if m.is_promotion() {
-                    let promoted_piece = Piece {
+                    self.state.nnue.move_update(turn.rook(), *rook, rook_target);
+                    self.state.nnue.move_update(
+                        Piece {
+                            color: turn,
+                            role: m.role(),
+                        },
+                        m.from().unwrap(),
+                        m.to(),
+                    );
+                }
+
+                Move::Normal {
+                    role,
+                    from,
+                    capture: _capture,
+                    to,
+                    promotion,
+                } => {
+                    if m.is_capture() {
+                        let target_piece = board.piece_at(*to).unwrap();
+                        let target_square = *to;
+
+                        self.state
+                            .nnue
+                            .manual_update::<OFF>(target_piece, target_square);
+                    }
+
+                    let piece = Piece {
                         color: turn,
-                        role: promotion.unwrap(),
+                        role: *role,
                     };
 
-                    self.state.nnue.manual_update::<OFF>(piece, *from);
-                    self.state.nnue.manual_update::<ON>(promoted_piece, *to);
-                } else {
-                    self.state.nnue.move_update(piece, *from, *to);
+                    if m.is_promotion() {
+                        let promoted_piece = Piece {
+                            color: turn,
+                            role: promotion.unwrap(),
+                        };
+
+                        self.state.nnue.manual_update::<OFF>(piece, *from);
+                        self.state.nnue.manual_update::<ON>(promoted_piece, *to);
+                    } else {
+                        self.state.nnue.move_update(piece, *from, *to);
+                    }
                 }
+
+                _ => {}
             }
-
-            _ => {}
         }
-
         pos.play_unchecked(m);
         self.state
             .hstack
@@ -114,6 +118,7 @@ impl Search {
     }
 
     pub fn undo_move(&mut self) {
+        #[cfg(not(feature = "classical"))]
         self.state.nnue.pop();
         self.state.hstack.pop();
     }
@@ -212,7 +217,10 @@ impl Search {
             return entry.score;
         }
 
-        // let static_eval = Eval::nnue_eval(&self.state.nnue, pos);
+        #[cfg(not(feature = "classical"))]
+        let static_eval = Eval::nnue_eval(&self.state.nnue, pos);
+
+        #[cfg(feature = "classical")]
         let static_eval = Eval::eval(pos);
 
         /* Improving */
@@ -411,7 +419,10 @@ impl Search {
         }
         self.state.info.nodes += 1;
 
-        // let stand_pat = Eval::nnue_eval(&self.state.nnue, pos);
+        #[cfg(not(feature = "classical"))]
+        let stand_pat = Eval::nnue_eval(&self.state.nnue, pos);
+
+        #[cfg(feature = "classical")]
         let stand_pat = Eval::eval(pos);
 
         if limit == 0 {
