@@ -15,6 +15,7 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use crate::logger::Logger;
 use std::fmt::{self};
 
 #[derive(Debug)]
@@ -46,332 +47,115 @@ pub struct OptionDescriptor<T> {
     pub max: T,
 }
 
-impl OptionDescriptor<i32> {
-    pub fn fmt_spsa(&self) -> String {
-        format!(
-            "{}, int, {}, {}, {}, {}, {}",
-            self.name, self.value, self.min, self.max, 2.25, 0.002
-        )
-    }
-}
-impl OptionDescriptor<u8> {
-    pub fn fmt_spsa(&self) -> String {
-        format!(
-            "{}, int, {}, {}, {}, {}, {}",
-            self.name, self.value, self.min, self.max, 2.25, 0.002
-        )
-    }
-}
-impl OptionDescriptor<usize> {
-    pub fn fmt_spsa(&self) -> String {
-        format!(
-            "{}, int, {}, {}, {}, {}, {}",
-            self.name, self.value, self.min, self.max, 2.25, 0.002
-        )
-    }
-}
-impl OptionDescriptor<i64> {
-    pub fn fmt_spsa(&self) -> String {
-        format!(
-            "{}, int, {}, {}, {}, {}, {}",
-            self.name, self.value, self.min, self.max, 2.25, 0.002
-        )
-    }
-}
-impl OptionDescriptor<u64> {
-    pub fn fmt_spsa(&self) -> String {
-        format!(
-            "{}, int, {}, {}, {}, {}, {}",
-            self.name, self.value, self.min, self.max, 2.25, 0.002
-        )
-    }
-}
-impl OptionDescriptor<f64> {
-    pub fn fmt_spsa(&self) -> String {
-        format!(
-            "{}, float, {}, {}, {}, {}, {}",
-            self.name, self.value, self.min, self.max, 2.25, 0.002
-        )
-    }
+macro_rules! impl_fmt_spsa {
+    ($($t:ty => $ty_str:expr),*) => {
+        $(impl OptionDescriptor<$t> {
+            pub fn fmt_spsa(&self) -> String {
+                format!(
+                    "{}, {}, {}, {}, {}, {}, {}",
+                    self.name, $ty_str, self.value, self.min, self.max, 2.25, 0.002
+                )
+            }
+        })*
+    };
 }
 
-impl fmt::Display for OptionDescriptor<i32> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "option name {} type {} default {} min {} max {}",
-            self.name, self.kind, self.value, self.min, self.max
-        )
-    }
-}
-impl fmt::Display for OptionDescriptor<u8> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "option name {} type {} default {} min {} max {}",
-            self.name, self.kind, self.value, self.min, self.max
-        )
-    }
-}
-impl fmt::Display for OptionDescriptor<usize> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "option name {} type {} default {} min {} max {}",
-            self.name, self.kind, self.value, self.min, self.max
-        )
-    }
-}
-impl fmt::Display for OptionDescriptor<i64> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "option name {} type {} default {} min {} max {}",
-            self.name, self.kind, self.value, self.min, self.max
-        )
-    }
-}
-impl fmt::Display for OptionDescriptor<u64> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "option name {} type {} default {} min {} max {}",
-            self.name, self.kind, self.value, self.min, self.max
-        )
-    }
-}
-impl fmt::Display for OptionDescriptor<f64> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "option name {} type {} default {} min {} max {}",
-            self.name, self.kind, self.value, self.min, self.max
-        )
-    }
+impl_fmt_spsa!(
+    i32 => "int",
+    u8 => "int",
+    usize => "int",
+    i64 => "int",
+    u64 => "int",
+    f64 => "float"
+);
+
+macro_rules! impl_fmt_display {
+    ($($t:ty),*) => {
+        $(impl fmt::Display for OptionDescriptor<$t> {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                write!(
+                    f,
+                    "option name {} type {} default {} min {} max {}",
+                    self.name, self.kind, self.value, self.min, self.max
+                )
+            }
+        })*
+    };
 }
 
-pub struct Config {
-    pub move_overhead: OptionDescriptor<usize>,
-    pub threads: OptionDescriptor<u8>,
-    pub hash: OptionDescriptor<usize>,
-    pub qsearch_depth: OptionDescriptor<u8>,
-    pub rfp_depth: OptionDescriptor<u8>,
-    pub rfp_base_margin: OptionDescriptor<i32>,
-    pub rfp_reduction_improving: OptionDescriptor<i32>,
-    pub fp_depth_margin: OptionDescriptor<u8>,
-    pub fp_base_margin: OptionDescriptor<i32>,
-    pub fp_margin_depth_factor: OptionDescriptor<i32>,
-    pub nmp_depth: OptionDescriptor<u8>,
-    pub nmp_margin: OptionDescriptor<u8>,
-    pub nmp_divisor: OptionDescriptor<u8>,
-    pub nmp_divisor_improving: OptionDescriptor<u8>,
-    pub lmp_move_margin: OptionDescriptor<usize>,
-    pub lmp_depth_factor: OptionDescriptor<u8>,
-    pub lmr_depth: OptionDescriptor<u8>,
-    pub lmr_move_margin: OptionDescriptor<usize>,
-    pub lmr_quiet_margin: OptionDescriptor<f64>,
-    pub lmr_quiet_divisor: OptionDescriptor<f64>,
-    pub lmr_base_margin: OptionDescriptor<f64>,
-    pub lmr_base_divisor: OptionDescriptor<f64>,
-    pub mo_tt_entry_value: OptionDescriptor<i32>,
-    pub mo_capture_value: OptionDescriptor<i32>,
-    pub mo_killer_value: OptionDescriptor<i32>,
-    pub tc_time_divisor: OptionDescriptor<u64>,
-    pub tc_elapsed_factor: OptionDescriptor<i64>,
-}
+impl_fmt_display!(i32, u8, usize, i64, u64, f64);
 
-impl Config {
-    pub fn default() -> Self {
-        Self {
-            move_overhead: OptionDescriptor {
-                name: "MoveOverhead",
-                kind: OptionKind::Spin,
-                value: 0,
-                min: 0,
-                max: 10000,
-            },
-            threads: OptionDescriptor {
-                name: "Threads",
-                kind: OptionKind::Spin,
-                value: 1,
-                min: 1,
-                max: 1,
-            },
-            hash: OptionDescriptor {
-                name: "Hash",
-                kind: OptionKind::Spin,
-                value: 255,
-                min: 1,
-                max: 1024,
-            },
-            qsearch_depth: OptionDescriptor {
-                name: "QSearchDepth",
-                kind: OptionKind::Spin,
-                value: 17,
-                min: 1,
-                max: 20,
-            },
-            rfp_depth: OptionDescriptor {
-                name: "RFPDepth",
-                kind: OptionKind::Spin,
-                value: 11,
-                min: 1,
-                max: 20,
-            },
-            rfp_base_margin: OptionDescriptor {
-                name: "RFPBaseMargin",
-                kind: OptionKind::Spin,
-                value: 57,
-                min: 1,
-                max: 200,
-            },
-            rfp_reduction_improving: OptionDescriptor {
-                name: "RFPReductionImproving",
-                kind: OptionKind::Spin,
-                value: 24,
-                min: 1,
-                max: 200,
-            },
-            fp_depth_margin: OptionDescriptor {
-                name: "FPDepthMargin",
-                kind: OptionKind::Spin,
-                value: 5,
-                min: 1,
-                max: 20,
-            },
-            fp_base_margin: OptionDescriptor {
-                name: "FPBaseMargin",
-                kind: OptionKind::Spin,
-                value: 40,
-                min: 1,
-                max: 200,
-            },
-            fp_margin_depth_factor: OptionDescriptor {
-                name: "FPMarginDepthFactor",
-                kind: OptionKind::Spin,
-                value: 35,
-                min: 1,
-                max: 200,
-            },
-            nmp_depth: OptionDescriptor {
-                name: "NMPDepth",
-                kind: OptionKind::Spin,
-                value: 5,
-                min: 1,
-                max: 20,
-            },
-            nmp_margin: OptionDescriptor {
-                name: "NMPMargin",
-                kind: OptionKind::Spin,
-                value: 7,
-                min: 1,
-                max: 20,
-            },
-            nmp_divisor: OptionDescriptor {
-                name: "NMPDivisor",
-                kind: OptionKind::Spin,
-                value: 2,
-                min: 1,
-                max: 20,
-            },
-            nmp_divisor_improving: OptionDescriptor {
-                name: "NMPDivisorImproving",
-                kind: OptionKind::Spin,
-                value: 10,
-                min: 1,
-                max: 20,
-            },
-            lmp_move_margin: OptionDescriptor {
-                name: "LMPMoveMargin",
-                kind: OptionKind::Spin,
-                value: 5,
-                min: 1,
-                max: 20,
-            },
-            lmp_depth_factor: OptionDescriptor {
-                name: "LMPDepthFactor",
-                kind: OptionKind::Spin,
-                value: 7,
-                min: 1,
-                max: 20,
-            },
-            lmr_depth: OptionDescriptor {
-                name: "LMRDepth",
-                kind: OptionKind::Spin,
-                value: 15,
-                min: 1,
-                max: 20,
-            },
-            lmr_move_margin: OptionDescriptor {
-                name: "LMRMoveMargin",
-                kind: OptionKind::Spin,
-                value: 5,
-                min: 1,
-                max: 20,
-            },
-            lmr_quiet_margin: OptionDescriptor {
-                name: "LMRQuietMargin",
-                kind: OptionKind::String,
-                value: 2.59,
-                min: 0.0,
-                max: 10.0,
-            },
-            lmr_quiet_divisor: OptionDescriptor {
-                name: "LMRQuietDivisor",
-                kind: OptionKind::String,
-                value: 2.02,
-                min: 1.0,
-                max: 10.0,
-            },
-            lmr_base_margin: OptionDescriptor {
-                name: "LMRBaseMargin",
-                kind: OptionKind::String,
-                value: 1.31,
-                min: 0.0,
-                max: 10.0,
-            },
-            lmr_base_divisor: OptionDescriptor {
-                name: "LMRBaseDivisor",
-                kind: OptionKind::String,
-                value: 3.28,
-                min: 1.0,
-                max: 10.0,
-            },
-            mo_tt_entry_value: OptionDescriptor {
-                name: "MOTTEntryValue",
-                kind: OptionKind::Spin,
-                value: 229,
-                min: 1,
-                max: 500,
-            },
-            mo_capture_value: OptionDescriptor {
-                name: "MOCaptureValue",
-                kind: OptionKind::Spin,
-                value: 55,
-                min: 0,
-                max: 500,
-            },
-            mo_killer_value: OptionDescriptor {
-                name: "MOKillerValue",
-                kind: OptionKind::Spin,
-                value: 78,
-                min: 0,
-                max: 500,
-            },
-            tc_time_divisor: OptionDescriptor {
-                name: "TCTimeDivisor",
-                kind: OptionKind::Spin,
-                value: 2,
-                min: 2,
-                max: 100,
-            },
-            tc_elapsed_factor: OptionDescriptor {
-                name: "TCElapsedFactor",
-                kind: OptionKind::Spin,
-                value: 8,
-                min: 1,
-                max: 10,
-            },
+macro_rules! make_config {
+    ($($field:ident: $t:ty = ($name:expr, $kind:expr, $val:expr, $min:expr, $max:expr);)*) => {
+        pub struct Config {
+            $(pub $field: OptionDescriptor<$t>,)*
         }
-    }
+
+        impl Config {
+            pub fn default() -> Self {
+                Self {
+                    $(
+                        $field: OptionDescriptor {
+                            name: $name,
+                            kind: $kind,
+                            value: $val,
+                            min: $min,
+                            max: $max,
+                        },
+                    )*
+                }
+            }
+
+            pub fn set(&mut self, name: &str, val: i64) {
+                match name {
+                    $(
+                        $name => self.$field.value = val as $t,
+                    )*
+                    _ => Logger::log(format!("info string unknown option: {}", name).as_str()),
+                }
+            }
+
+            pub fn all_spsa(&self) -> Vec<String> {
+                vec![
+                    $(self.$field.fmt_spsa(),)*
+                ]
+            }
+
+            pub fn print_uci_options(&self) {
+                $(
+                    Logger::log(format!("{}", self.$field).as_str());
+                )*
+            }
+        }
+    };
+}
+
+make_config! {
+    move_overhead: usize = ("MoveOverhead", OptionKind::Spin, 0, 0, 10000);
+    threads: u8 = ("Threads", OptionKind::Spin, 1, 1, 1);
+    hash: usize = ("Hash", OptionKind::Spin, 255, 1, 1024);
+    qsearch_depth: u8 = ("QSearchDepth", OptionKind::Spin, 17, 1, 20);
+    rfp_depth: u8 = ("RFPDepth", OptionKind::Spin, 11, 1, 20);
+    rfp_base_margin: i32 = ("RFPBaseMargin", OptionKind::Spin, 57, 1, 200);
+    rfp_reduction_improving: i32 = ("RFPReductionImproving", OptionKind::Spin, 24, 1, 200);
+    fp_depth_margin: u8 = ("FPDepthMargin", OptionKind::Spin, 5, 1, 20);
+    fp_base_margin: i32 = ("FPBaseMargin", OptionKind::Spin, 40, 1, 200);
+    fp_margin_depth_factor: i32 = ("FPMarginDepthFactor", OptionKind::Spin, 35, 1, 200);
+    nmp_depth: u8 = ("NMPDepth", OptionKind::Spin, 5, 1, 20);
+    nmp_margin: u8 = ("NMPMargin", OptionKind::Spin, 7, 1, 20);
+    nmp_divisor: u8 = ("NMPDivisor", OptionKind::Spin, 2, 1, 20);
+    nmp_divisor_improving: u8 = ("NMPDivisorImproving", OptionKind::Spin, 10, 1, 20);
+    lmp_move_margin: usize = ("LMPMoveMargin", OptionKind::Spin, 5, 1, 20);
+    lmp_depth_factor: u8 = ("LMPDepthFactor", OptionKind::Spin, 7, 1, 20);
+    lmr_depth: u8 = ("LMRDepth", OptionKind::Spin, 15, 1, 20);
+    lmr_move_margin: usize = ("LMRMoveMargin", OptionKind::Spin, 5, 1, 20);
+    lmr_quiet_margin: f64 = ("LMRQuietMargin", OptionKind::String, 2.59, 0.0, 10.0);
+    lmr_quiet_divisor: f64 = ("LMRQuietDivisor", OptionKind::String, 2.02, 1.0, 10.0);
+    lmr_base_margin: f64 = ("LMRBaseMargin", OptionKind::String, 1.31, 0.0, 10.0);
+    lmr_base_divisor: f64 = ("LMRBaseDivisor", OptionKind::String, 3.28, 1.0, 10.0);
+    mo_tt_entry_value: i32 = ("MOTTEntryValue", OptionKind::Spin, 229, 1, 500);
+    mo_capture_value: i32 = ("MOCaptureValue", OptionKind::Spin, 55, 0, 500);
+    mo_killer_value: i32 = ("MOKillerValue", OptionKind::Spin, 78, 0, 500);
+    tc_time_divisor: u64 = ("TCTimeDivisor", OptionKind::Spin, 2, 2, 100);
+    tc_elapsed_factor: i64 = ("TCElapsedFactor", OptionKind::Spin, 8, 1, 10);
 }
