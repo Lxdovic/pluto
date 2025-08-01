@@ -403,11 +403,7 @@ impl UciController {
 
                 self.search.state.tt = TranspositionTable::new(entries as usize);
             }
-            _ => self
-                .search
-                .state
-                .cfg
-                .set(name, value.parse::<i64>().unwrap()),
+            _ => self.search.state.cfg.set(name, value),
         }
     }
 
