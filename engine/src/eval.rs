@@ -118,6 +118,15 @@ impl Eval {
     }
 
     #[cfg(feature = "classical")]
+    fn tempo(pos: &Chess, state: &mut EvalState) {
+        state.mg += 28
+            * match pos.turn() {
+                Color::White => 1,
+                Color::Black => -1,
+            };
+    }
+
+    #[cfg(feature = "classical")]
     pub fn eval(pos: &Chess) -> i32 {
         let mut state = EvalState::default();
 
@@ -127,6 +136,8 @@ impl Eval {
                 Color::Black => Self::eval_black(pos, sq, piece, &mut state),
             };
         }
+
+        Self::tempo(pos, &mut state);
 
         (state.mg * state.phase + state.eg * (24 - state.phase)) / 24
             * if pos.turn() == Color::White { 1 } else { -1 }
