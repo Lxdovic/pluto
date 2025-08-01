@@ -22,6 +22,7 @@ use std::sync::Arc;
 use std::{io, thread};
 
 use crate::logger::Logger;
+#[cfg(not(feature = "classical"))]
 use crate::nnue::NNUEState;
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 use crate::postMessage;
@@ -133,11 +134,13 @@ impl UciController {
         let scope = tokens.remove().unwrap();
 
         match scope {
+            #[cfg(feature = "tuning")]
             "spsa" => self.handle_print_spsa(tokens),
             _ => Logger::log(&format!("unknown scope: {}", scope)),
         }
     }
 
+    #[cfg(feature = "tuning")]
     fn handle_print_spsa(&self, tokens: &mut Queue<&str>) {
         let target = tokens.remove().unwrap();
 
@@ -147,6 +150,7 @@ impl UciController {
         }
     }
 
+    #[cfg(feature = "tuning")]
     fn handle_print_spsa_workload(&self) {
         self.search.state.cfg.all_spsa();
 
@@ -173,9 +177,12 @@ impl UciController {
             let fen: Fen = position.parse().ok().unwrap();
             let game = fen.into_position(CastlingMode::Standard).ok().unwrap();
 
-            self.search.state.nnue = NNUEState::from_board(self.search.state.game.board());
+            #[cfg(not(feature = "classical"))]
+            {
+                self.search.state.nnue = NNUEState::from_board(self.search.state.game.board());
+            }
             self.search.state.game = game;
-            self.search.state.params.depth = 12;
+            self.search.state.params.depth = 5;
             self.search.state.tc.time_mode = TimeMode::Infinite;
 
             self.search.go(false, &stop);
@@ -186,7 +193,11 @@ impl UciController {
         let elapsed = Local::now().timestamp_millis() - start_time;
 
         self.search.state.game = Chess::default();
-        self.search.state.nnue = NNUEState::from_board(self.search.state.game.board());
+
+        #[cfg(not(feature = "classical"))]
+        {
+            self.search.state.nnue = NNUEState::from_board(self.search.state.game.board());
+        }
 
         println!(
             "{} nodes {} nps",
@@ -315,7 +326,10 @@ impl UciController {
             }
         }
 
-        self.search.state.nnue = NNUEState::from_board(self.search.state.game.board());
+        #[cfg(not(feature = "classical"))]
+        {
+            self.search.state.nnue = NNUEState::from_board(self.search.state.game.board());
+        }
     }
 
     fn handle_position_fen(&mut self, tokens: &mut Queue<&str>) {
@@ -359,7 +373,10 @@ impl UciController {
             }
         }
 
-        self.search.state.nnue = NNUEState::from_board(self.search.state.game.board());
+        #[cfg(not(feature = "classical"))]
+        {
+            self.search.state.nnue = NNUEState::from_board(self.search.state.game.board());
+        }
     }
 
     fn handle_setoption(&mut self, tokens: &mut Queue<&str>) {
@@ -416,6 +433,12 @@ impl UciController {
     fn handle_uci(&self) {
         Logger::log(r#"id name Pluto 1.0.1"#);
         Logger::log(r#"id author Lxdovic"#);
+
+        #[cfg(not(feature = "classical"))]
+        Logger::log(r#"info string using NNUE eval"#);
+
+        #[cfg(feature = "classical")]
+        Logger::log(r#"info string using HCE eval"#);
 
         self.search.state.cfg.print_uci_options();
 

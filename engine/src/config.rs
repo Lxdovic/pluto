@@ -47,6 +47,7 @@ pub struct OptionDescriptor<T> {
     pub max: T,
 }
 
+#[cfg(feature = "tuning")]
 macro_rules! impl_fmt_spsa {
     ($($t:ty => $ty_str:expr),*) => {
         $(impl OptionDescriptor<$t> {
@@ -60,6 +61,7 @@ macro_rules! impl_fmt_spsa {
     };
 }
 
+#[cfg(feature = "tuning")]
 impl_fmt_spsa!(
     i32 => "int",
     u8 => "int",
@@ -115,6 +117,7 @@ macro_rules! make_config {
                 }
             }
 
+            #[cfg(feature = "tuning")]
             pub fn all_spsa(&self) -> Vec<String> {
                 vec![
                     $(self.$field.fmt_spsa(),)*

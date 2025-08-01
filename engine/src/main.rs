@@ -21,6 +21,7 @@ mod bound;
 mod config;
 mod eval;
 mod logger;
+#[cfg(not(feature = "classical"))]
 mod nnue;
 mod search;
 mod time_control;
