@@ -1,8 +1,8 @@
-# Build executables for Carp releases. Base rule is reserved for OpenBench
 EXE   := Pluto_1.0.1
 LXE   := Pluto_1.0.1
 _THIS := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 TMPDIR := $(_THIS)/tmp
+HCE   := true
 
 ifeq ($(OS),Windows_NT)
 	EXT := .exe
@@ -16,45 +16,16 @@ else
 	VER := linux
 endif
 
+ifeq ($(HCE),true)
+	FEATURES := tuning,classical
+else
+	FEATURES := tuning
+endif
+
 NAME := $(EXE)$(EXT)
 
 rule:
-	cargo rustc -r -p engine --bins --features tuning -- -C target-cpu=native --emit link=$(NAME)
+	cargo rustc -r -p engine --bins --features $(FEATURES) -- -C target-cpu=native --emit link=$(NAME)
 
 tmp-dir:
 	mkdir -p $(TMPDIR)
-
-x86-64 x86-64-v2 x86-64-v3 x86-64-v4 native: tmp-dir
-	cargo rustc -r -p engine --bins -- -C target-cpu=$@ -C profile-generate=$(TMPDIR) --emit link=$(LXE)-$(VER)-$@$(EXT)
-	./$(LXE)-$(VER)-$@$(EXT) bench 16
-	llvm-profdata merge -o $(TMPDIR)/merged.profdata $(TMPDIR)
-	
-	cargo rustc -r -p engine --bins -- -C target-feature=+crt-static -C target-cpu=$@ -C profile-use=$(TMPDIR)/merged.profdata --emit link=$(LXE)-$(VER)-$@$(EXT)
-
-	rm -rf $(TMPDIR)/*
-	rm -f *.pdb
-
-syzygy: tmp-dir
-	cargo rustc -r -p engine --bins --features tuning -- -C target-cpu=native -C profile-generate=$(TMPDIR) --emit link=$(LXE)-$(VER)$(EXT)
-	./$(LXE)-$(VER)$(EXT) bench 16
-	llvm-profdata merge -o $(TMPDIR)/merged.profdata $(TMPDIR)
-	
-	cargo rustc -r -p engine --bins --features tuning -- -C target-feature=+crt-static -C target-cpu=native -C profile-use=$(TMPDIR)/merged.profdata --emit link=$(LXE)-$(VER)$(EXT)
-
-	rm -rf $(TMPDIR)/*
-	rm -f *.pdb
-
-datagen: tmp-dir
-	cargo rustc -r -p tools -- -C target-cpu=native -C profile-generate=$(TMPDIR) --emit link=datagen$(EXT)
-	./datagen$(EXT) datagen -g 256 -t 32 -n 5000
-	./datagen$(EXT) datagen -g 256 -t 32 -d 8
-	llvm-profdata merge -o $(TMPDIR)/merged.profdata $(TMPDIR)
-
-	cargo rustc -r -p tools -- -C target-cpu=native -C profile-use=$(TMPDIR)/merged.profdata --emit link=datagen$(EXT)
-
-	rm -rf $(TMPDIR)
-	rm -rf $(_THIS)/data
-	rm -f *.pdb
-
-release: x86-64 x86-64-v2 x86-64-v3 x86-64-v4
-	rm -rf $(TMPDIR)
