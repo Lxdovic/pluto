@@ -30,6 +30,8 @@ pub struct EvalState {
     eg: i32,
 }
 
+type EvalRoleFn = fn(&Chess, Square, Piece) -> (i32, i32);
+
 pub struct Eval {}
 
 impl Eval {
@@ -44,14 +46,73 @@ impl Eval {
     }
 
     #[cfg(feature = "classical")]
+    fn eval_pawn(pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
+        let doubled = Self::doubled(pos, sq, piece);
+        let isolated = Self::isolated(pos, sq, piece);
+        let passed = Self::passed(pos, sq, piece);
+
+        let total = doubled + isolated + passed;
+
+        let mg = total;
+        let eg = total;
+
+        (mg, eg)
+    }
+
+    #[cfg(feature = "classical")]
+    fn eval_knight(pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
+        let mobility = Self::mobility(pos, sq, piece);
+
+        let mg = mobility;
+        let eg = mobility;
+
+        (mg, eg)
+    }
+
+    #[cfg(feature = "classical")]
+    fn eval_bishop(pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
+        let mobility = Self::mobility(pos, sq, piece);
+
+        let mg = mobility;
+        let eg = mobility;
+
+        (mg, eg)
+    }
+
+    #[cfg(feature = "classical")]
+    fn eval_rook(pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
+        let mobility = Self::mobility(pos, sq, piece);
+        let files = Self::mg_rook_files(pos, sq);
+
+        let mg = mobility + files;
+        let eg = mobility;
+
+        (mg, eg)
+    }
+
+    #[cfg(feature = "classical")]
+    fn eval_queen(pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
+        let mobility = Self::mobility(pos, sq, piece);
+
+        let mg = mobility;
+        let eg = mobility;
+
+        (mg, eg)
+    }
+
+    #[cfg(feature = "classical")]
+    fn eval_king(pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
+        let shield = Self::king_shield(pos, sq, piece);
+
+        let mg = shield;
+        let eg = shield;
+
+        (mg, eg)
+    }
+
+    #[cfg(feature = "classical")]
     fn mobility(pos: &Chess, sq: Square, piece: Piece) -> i32 {
         let mut mob = 0;
-
-        match piece.role {
-            Role::Pawn => return 0,
-            Role::King => return 0,
-            _ => 0,
-        };
 
         let attacks = attacks::attacks(sq, piece, pos.board().occupied());
 
@@ -61,25 +122,88 @@ impl Eval {
     }
 
     #[cfg(feature = "classical")]
-    fn mg_rook_files(pos: &Chess, sq: Square, piece: Piece) -> i32 {
-        if piece.role == Role::Rook {
-            let board = pos.board();
-            let us = pos.turn();
-            let file = FILES_TABLE[sq.file() as usize];
-            let all_pawns = board.pawns();
+    fn doubled(pos: &Chess, sq: Square, piece: Piece) -> i32 {
+        let pawns = pos.board().by_piece(piece);
+        let file = FILES_TABLE[sq.file() as usize];
+        let count = pawns.intersect(file).count() as i32;
 
-            if file.intersect(all_pawns).count() == 0 {
-                return 20;
-            }
+        -(count - 1) * 5
+    }
 
-            let our_pawns = board.by_piece(Piece {
-                role: Role::Pawn,
-                color: us,
-            });
+    #[cfg(feature = "classical")]
+    fn isolated(pos: &Chess, sq: Square, piece: Piece) -> i32 {
+        let isolation = ADJACENT_FILES_TABLE[sq.file() as usize];
+        let our_pawns = pos.board().by_piece(piece);
 
-            if file.intersect(our_pawns).count() == 0 {
-                return 10;
-            }
+        if isolation.intersect(our_pawns).count() == 0 {
+            return -10;
+        }
+
+        0
+    }
+
+    #[cfg(feature = "classical")]
+    fn passed(pos: &Chess, sq: Square, piece: Piece) -> i32 {
+        let isolation = ADJACENT_AND_FILE_TABLE[sq.file() as usize];
+        let their_pawns = pos.board().by_piece(Piece {
+            role: piece.role,
+            color: piece.color.other(),
+        });
+
+        if isolation.intersect(their_pawns).count() == 0 {
+            return 10;
+        }
+
+        0
+    }
+
+    #[cfg(feature = "classical")]
+    fn king_shield(pos: &Chess, sq: Square, piece: Piece) -> i32 {
+        let our_pawns = pos.board().by_piece(Piece {
+            role: Role::Pawn,
+            color: piece.color,
+        });
+
+        attacks::attacks(sq, piece, Bitboard(0))
+            .intersect(our_pawns)
+            .count() as i32
+    }
+
+    #[cfg(feature = "classical")]
+    fn bishop_pair(pos: &Chess, state: &mut EvalState) {
+        let bishops = pos.board().bishops();
+        let white_bishops = pos.board().white().intersect(bishops);
+        let black_bishops = pos.board().black().intersect(bishops);
+
+        if white_bishops.count() >= 2 {
+            state.mg += 10;
+            state.eg += 8;
+        }
+
+        if black_bishops.count() >= 2 {
+            state.mg -= 10;
+            state.eg -= 8;
+        }
+    }
+
+    #[cfg(feature = "classical")]
+    fn mg_rook_files(pos: &Chess, sq: Square) -> i32 {
+        let board = pos.board();
+        let us = pos.turn();
+        let file = FILES_TABLE[sq.file() as usize];
+        let all_pawns = board.pawns();
+
+        if file.intersect(all_pawns).count() == 0 {
+            return 20;
+        }
+
+        let our_pawns = board.by_piece(Piece {
+            role: Role::Pawn,
+            color: us,
+        });
+
+        if file.intersect(our_pawns).count() == 0 {
+            return 10;
         }
 
         0
@@ -89,14 +213,12 @@ impl Eval {
     fn eval_white(pos: &Chess, sq: Square, piece: Piece, state: &mut EvalState) {
         let piece_index = (piece.role as usize - 1) * 2;
         let square_index = sq as usize;
-
-        let mobility = Self::mobility(pos, sq, piece);
+        let (piece_mg, piece_eg) = EVAL_ROLES[piece.role as usize - 1](pos, sq, piece);
 
         state.mg += MG_TABLE[piece_index][square_index];
         state.eg += EG_TABLE[piece_index][square_index];
-        state.mg += Self::mg_rook_files(pos, sq, piece);
-        state.mg += mobility;
-        state.eg += mobility;
+        state.mg += piece_mg;
+        state.eg += piece_eg;
 
         state.phase += GAME_PHASES[piece_index];
     }
@@ -105,14 +227,12 @@ impl Eval {
     fn eval_black(pos: &Chess, sq: Square, piece: Piece, state: &mut EvalState) {
         let piece_index = (piece.role as usize - 1) * 2 + 1;
         let square_index = sq as usize;
-
-        let mobility = Self::mobility(pos, sq, piece);
+        let (piece_mg, piece_eg) = EVAL_ROLES[piece.role as usize - 1](pos, sq, piece);
 
         state.mg -= MG_TABLE[piece_index][square_index];
         state.eg -= EG_TABLE[piece_index][square_index];
-        state.mg -= Self::mg_rook_files(pos, sq, piece);
-        state.mg -= mobility;
-        state.eg -= mobility;
+        state.mg -= piece_mg;
+        state.eg -= piece_eg;
 
         state.phase += GAME_PHASES[piece_index];
     }
@@ -138,6 +258,7 @@ impl Eval {
         }
 
         Self::tempo(pos, &mut state);
+        Self::bishop_pair(pos, &mut state);
 
         (state.mg * state.phase + state.eg * (24 - state.phase)) / 24
             * if pos.turn() == Color::White { 1 } else { -1 }
@@ -217,6 +338,37 @@ const MG_PIECE_VALUES: [i32; 6] = [82, 337, 365, 447, 1025, 0];
 const EG_PIECE_VALUES: [i32; 6] = [94, 281, 297, 512, 936, 0];
 #[cfg(feature = "classical")]
 const GAME_PHASES: [i32; 12] = [0, 0, 1, 1, 1, 1, 2, 2, 4, 4, 0, 0];
+const EVAL_ROLES: [EvalRoleFn; 6] = [
+    Eval::eval_pawn,
+    Eval::eval_knight,
+    Eval::eval_bishop,
+    Eval::eval_rook,
+    Eval::eval_queen,
+    Eval::eval_king,
+];
+
+/* gives adjacent files for index i
+* if i = 2:
+* 0 1 0 1 0 0 0 0
+* 0 1 0 1 0 0 0 0
+* 0 1 0 1 0 0 0 0
+* 0 1 0 1 0 0 0 0
+* 0 1 0 1 0 0 0 0
+* 0 1 0 1 0 0 0 0
+* 0 1 0 1 0 0 0 0
+* 0 1 0 1 0 0 0 0
+*/
+#[cfg(feature = "classical")]
+const ADJACENT_FILES_TABLE: [Bitboard; 8] = [
+    Bitboard(0x202020202020202),
+    Bitboard(0x505050505050505),
+    Bitboard(0xa0a0a0a0a0a0a0a),
+    Bitboard(0x1414141414141414),
+    Bitboard(0x2828282828282828),
+    Bitboard(0x5050505050505050),
+    Bitboard(0xa0a0a0a0a0a0a0a0),
+    Bitboard(0x4040404040404040),
+];
 
 #[cfg(feature = "classical")]
 #[rustfmt::skip]
@@ -241,6 +393,29 @@ const FILES_TABLE: [Bitboard; 8] = [
     Bitboard(0x2020202020202020),
     Bitboard(0x4040404040404040),
     Bitboard(0x8080808080808080),
+];
+
+/* gives adjacent and current files for index i
+* if i = 2:
+* 0 1 1 1 0 0 0 0
+* 0 1 1 1 0 0 0 0
+* 0 1 1 1 0 0 0 0
+* 0 1 1 1 0 0 0 0
+* 0 1 1 1 0 0 0 0
+* 0 1 1 1 0 0 0 0
+* 0 1 1 1 0 0 0 0
+* 0 1 1 1 0 0 0 0
+*/
+#[cfg(feature = "classical")]
+const ADJACENT_AND_FILE_TABLE: [Bitboard; 8] = [
+    Bitboard(0x101010101010101 & 0x202020202020202),
+    Bitboard(0x202020202020202 & 0x505050505050505),
+    Bitboard(0x404040404040404 & 0xa0a0a0a0a0a0a0a),
+    Bitboard(0x808080808080808 & 0x1414141414141414),
+    Bitboard(0x1010101010101010 & 0x2828282828282828),
+    Bitboard(0x2020202020202020 & 0x5050505050505050),
+    Bitboard(0x4040404040404040 & 0xa0a0a0a0a0a0a0a0),
+    Bitboard(0x8080808080808080 & 0x4040404040404040),
 ];
 
 #[cfg(feature = "classical")]
