@@ -7,4 +7,8 @@ fn main() {
     if std::env::var("CARGO_FEATURE_CLASSICAL").is_ok() {
         println!("cargo:rustc-cfg=feature=\"classical\"");
     }
+
+    if std::env::var("CARGO_FEATURE_CLASSICAL").is_ok() {
+        println!("cargo:rustc-cfg=feature=\"log\"");
+    }
 }
