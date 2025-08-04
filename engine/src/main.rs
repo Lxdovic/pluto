@@ -27,9 +27,26 @@ mod search;
 mod time_control;
 mod uci;
 
+use simplelog::*;
+
 #[cfg(not(target_arch = "wasm32"))]
 pub fn main() {
+    use logger::Logger;
+    use std::fs::File;
     use uci::UciReader;
+
+    let mut log_path = env::temp_dir();
+    log_path.push("pluto.log");
+
+    let file = File::create(&log_path).expect("Unable to create log file");
+
+    WriteLogger::init(LevelFilter::Debug, Config::default(), file).unwrap();
+
+    std::panic::set_hook(Box::new(|panic_info| {
+        Logger::log(format!("{:?}", panic_info).as_str());
+        log::error!("Panic occurred: {:?}", panic_info);
+        log::logger().flush();
+    }));
 
     let args: Vec<String> = env::args().collect();
     UciReader::default().run(args);
