@@ -32,13 +32,17 @@ use simplelog::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub fn main() {
     use logger::Logger;
-    use std::fs::File;
+    use std::fs::OpenOptions;
     use uci::UciReader;
 
     let mut log_path = env::temp_dir();
     log_path.push("pluto.log");
 
-    let file = File::create(&log_path).expect("Unable to create log file");
+    let file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&log_path)
+        .expect("Unable to open log file");
 
     WriteLogger::init(LevelFilter::Debug, Config::default(), file).unwrap();
 
