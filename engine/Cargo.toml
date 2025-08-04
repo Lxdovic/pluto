@@ -19,6 +19,7 @@ path = "src/main.rs"
 default = []
 tuning = []
 classical = []
+log = []
 
 [dependencies]
 queues = "1.1.0"
