@@ -16,26 +16,27 @@
 */
 
 use shakmaty::{CastlingMode, Move};
+use std::u8;
 
 pub struct PvTable {
-    pub length: [i32; 64],
+    pub length: Vec<i32>,
     pub table: Vec<Vec<Option<Move>>>,
 }
 
 impl PvTable {
     pub fn default() -> PvTable {
+        const MAX_DEPTH: usize = u8::MAX as usize + 1;
+
         PvTable {
-            length: [0; 64],
-            table: vec![vec![None; 64]; 64],
+            length: vec![0; MAX_DEPTH],
+            table: vec![vec![None; MAX_DEPTH]; MAX_DEPTH],
         }
     }
-}
 
-impl PvTable {
     pub fn store(&mut self, ply: usize, m: Move) {
         self.table[ply][ply] = Some(m);
 
-        for next_ply in ply as i32 + 1..self.length[ply + 1] {
+        for next_ply in (ply as i32 + 1)..self.length[ply + 1] {
             self.table[ply][next_ply as usize] = self.table[ply + 1][next_ply as usize].clone();
         }
 
