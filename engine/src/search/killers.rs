@@ -16,15 +16,16 @@
 */
 
 use shakmaty::Move;
+use std::u8;
 
 pub struct Killers {
-    table: [Vec<Move>; 64],
+    table: Vec<Vec<Move>>,
 }
 
 impl Killers {
     pub fn new() -> Self {
         Self {
-            table: [const { Vec::new() }; 64],
+            table: vec![Vec::new(); u8::MAX as usize],
         }
     }
 
@@ -33,13 +34,15 @@ impl Killers {
     }
 
     pub fn store(&mut self, ply: usize, m: Move) {
-        if ply >= 64 {
+        if ply >= self.table.len() {
             return;
         }
 
-        if !self.get(ply).contains(&m) {
-            self.table[ply].pop();
-            self.table[ply].insert(0, m);
+        let killers = &mut self.table[ply];
+
+        if !killers.contains(&m) {
+            killers.pop();
+            killers.insert(0, m);
         }
     }
 }
