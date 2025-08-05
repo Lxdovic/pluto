@@ -30,6 +30,7 @@ pub struct EvalState {
     eg: i32,
 }
 
+#[cfg(feature = "classical")]
 type EvalRoleFn = fn(&Chess, Square, Piece) -> (i32, i32);
 
 pub struct Eval {}
@@ -338,6 +339,7 @@ const MG_PIECE_VALUES: [i32; 6] = [82, 337, 365, 447, 1025, 0];
 const EG_PIECE_VALUES: [i32; 6] = [94, 281, 297, 512, 936, 0];
 #[cfg(feature = "classical")]
 const GAME_PHASES: [i32; 12] = [0, 0, 1, 1, 1, 1, 2, 2, 4, 4, 0, 0];
+#[cfg(feature = "classical")]
 const EVAL_ROLES: [EvalRoleFn; 6] = [
     Eval::eval_pawn,
     Eval::eval_knight,
