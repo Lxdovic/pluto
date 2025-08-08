@@ -224,19 +224,7 @@ impl Search {
         let static_eval = Eval::eval(pos);
 
         /* Improving */
-        let improving = match ply {
-            ply if ply < 2 => false,
-            _ => {
-                static_eval >= {
-                    let e = self.state.hstack.get_eval(ply - 2);
-                    if let Some(e) = e {
-                        e
-                    } else {
-                        static_eval
-                    }
-                }
-            }
-        };
+        let improving = static_eval >= self.state.hstack.get_eval(ply - 2).unwrap_or(static_eval);
 
         /* Threefold Detection */
         if ply > 0 && self.state.hstack.count_zobrist(position_key) >= 1 {
