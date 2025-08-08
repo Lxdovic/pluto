@@ -15,6 +15,8 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#[cfg(feature = "classical")]
+use crate::config::Config;
 /// Position evaluation module containing piece-square tables and evaluation functions.
 #[cfg(not(feature = "classical"))]
 use crate::nnue::{NNUEState, NNUE};
@@ -31,7 +33,7 @@ pub struct EvalState {
 }
 
 #[cfg(feature = "classical")]
-type EvalRoleFn = fn(&Chess, Square, Piece) -> (i32, i32);
+type EvalRoleFn = fn(&Config, &Chess, Square, Piece) -> (i32, i32);
 
 pub struct Eval {}
 
@@ -47,104 +49,107 @@ impl Eval {
     }
 
     #[cfg(feature = "classical")]
-    fn eval_pawn(pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
-        let doubled = Self::doubled(pos, sq, piece);
-        let isolated = Self::isolated(pos, sq, piece);
-        let passed = Self::passed(pos, sq, piece);
+    fn eval_pawn(cfg: &Config, pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
+        let (doubled_mg, doubled_eg) = Self::doubled(cfg, pos, sq, piece);
+        let (isolated_mg, isolated_eg) = Self::isolated(cfg, pos, sq, piece);
+        let (passed_mg, passed_eg) = Self::passed(cfg, pos, sq, piece);
 
-        let total = doubled + isolated + passed;
-
-        let mg = total;
-        let eg = total;
+        let mg = doubled_mg + isolated_mg + passed_mg;
+        let eg = doubled_eg + isolated_eg + passed_eg;
 
         (mg, eg)
     }
 
     #[cfg(feature = "classical")]
-    fn eval_knight(pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
-        let mobility = Self::mobility(pos, sq, piece);
+    fn eval_knight(cfg: &Config, pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
+        let (mobility_mg, mobility_eg) = Self::mobility(cfg, pos, sq, piece);
 
-        let mg = mobility;
-        let eg = mobility;
-
-        (mg, eg)
-    }
-
-    #[cfg(feature = "classical")]
-    fn eval_bishop(pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
-        let mobility = Self::mobility(pos, sq, piece);
-
-        let mg = mobility;
-        let eg = mobility;
+        let mg = mobility_mg;
+        let eg = mobility_eg;
 
         (mg, eg)
     }
 
     #[cfg(feature = "classical")]
-    fn eval_rook(pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
-        let mobility = Self::mobility(pos, sq, piece);
-        let files = Self::mg_rook_files(pos, sq);
+    fn eval_bishop(cfg: &Config, pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
+        let (mobility_mg, mobility_eg) = Self::mobility(cfg, pos, sq, piece);
 
-        let mg = mobility + files;
-        let eg = mobility;
-
-        (mg, eg)
-    }
-
-    #[cfg(feature = "classical")]
-    fn eval_queen(pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
-        let mobility = Self::mobility(pos, sq, piece);
-
-        let mg = mobility;
-        let eg = mobility;
+        let mg = mobility_mg;
+        let eg = mobility_eg;
 
         (mg, eg)
     }
 
     #[cfg(feature = "classical")]
-    fn eval_king(pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
-        let shield = Self::king_shield(pos, sq, piece);
+    fn eval_rook(cfg: &Config, pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
+        let (mobility_mg, mobility_eg) = Self::mobility(cfg, pos, sq, piece);
+        let (files_mg, files_eg) = Self::rook_files(cfg, pos, sq);
 
-        let mg = shield;
-        let eg = shield;
+        let mg = mobility_mg + files_mg;
+        let eg = mobility_eg + files_eg;
 
         (mg, eg)
     }
 
     #[cfg(feature = "classical")]
-    fn mobility(pos: &Chess, sq: Square, piece: Piece) -> i32 {
-        let mut mob = 0;
+    fn eval_queen(cfg: &Config, pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
+        let (mobility_mg, mobility_eg) = Self::mobility(cfg, pos, sq, piece);
 
-        let attacks = attacks::attacks(sq, piece, pos.board().occupied());
+        let mg = mobility_mg;
+        let eg = mobility_eg;
 
-        mob += attacks.count() as i32;
-
-        mob
+        (mg, eg)
     }
 
     #[cfg(feature = "classical")]
-    fn doubled(pos: &Chess, sq: Square, piece: Piece) -> i32 {
+    fn eval_king(cfg: &Config, pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
+        let (shield_mg, shield_eg) = Self::king_shield(cfg, pos, sq, piece);
+
+        let mg = shield_mg;
+        let eg = shield_eg;
+
+        (mg, eg)
+    }
+
+    #[cfg(feature = "classical")]
+    fn mobility(cfg: &Config, pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
+        let attacks = attacks::attacks(sq, piece, pos.board().occupied()).count() as i32;
+
+        (
+            attacks * cfg.hce_mobility_factor_mg.value,
+            attacks * cfg.hce_mobility_factor_eg.value,
+        )
+    }
+
+    #[cfg(feature = "classical")]
+    fn doubled(cfg: &Config, pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
         let pawns = pos.board().by_piece(piece);
         let file = FILES_TABLE[sq.file() as usize];
-        let count = pawns.intersect(file).count() as i32;
+        let count = pawns.intersect(file).count() as i32 - 1;
 
-        -(count - 1) * 5
+        (
+            -count * cfg.hce_doubled_pawn_factor_mg.value,
+            -count * cfg.hce_doubled_pawn_factor_eg.value,
+        )
     }
 
     #[cfg(feature = "classical")]
-    fn isolated(pos: &Chess, sq: Square, piece: Piece) -> i32 {
+    fn isolated(cfg: &Config, pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
         let isolation = ADJACENT_FILES_TABLE[sq.file() as usize];
         let our_pawns = pos.board().by_piece(piece);
 
         if isolation.intersect(our_pawns).count() == 0 {
-            return -10;
+            return (
+                -cfg.hce_isolated_pawn_malus_mg.value,
+                -cfg.hce_isolated_pawn_malus_eg.value,
+            );
         }
 
-        0
+        (0, 0)
     }
 
     #[cfg(feature = "classical")]
-    fn passed(pos: &Chess, sq: Square, piece: Piece) -> i32 {
+    fn passed(cfg: &Config, pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
         let isolation = ADJACENT_AND_FILE_TABLE[sq.file() as usize];
         let their_pawns = pos.board().by_piece(Piece {
             role: piece.role,
@@ -152,50 +157,61 @@ impl Eval {
         });
 
         if isolation.intersect(their_pawns).count() == 0 {
-            return 10;
+            return (
+                cfg.hce_passed_pawn_bonus_mg.value,
+                cfg.hce_passed_pawn_bonus_eg.value,
+            );
         }
 
-        0
+        (0, 0)
     }
 
     #[cfg(feature = "classical")]
-    fn king_shield(pos: &Chess, sq: Square, piece: Piece) -> i32 {
+    fn king_shield(cfg: &Config, pos: &Chess, sq: Square, piece: Piece) -> (i32, i32) {
         let our_pawns = pos.board().by_piece(Piece {
             role: Role::Pawn,
             color: piece.color,
         });
 
-        attacks::attacks(sq, piece, Bitboard(0))
+        let count = attacks::attacks(sq, piece, Bitboard(0))
             .intersect(our_pawns)
-            .count() as i32
+            .count() as i32;
+
+        (
+            count * cfg.hce_king_shield_factor_mg.value,
+            count * cfg.hce_king_shield_factor_eg.value,
+        )
     }
 
     #[cfg(feature = "classical")]
-    fn bishop_pair(pos: &Chess, state: &mut EvalState) {
+    fn bishop_pair(cfg: &Config, pos: &Chess, state: &mut EvalState) {
         let bishops = pos.board().bishops();
         let white_bishops = pos.board().white().intersect(bishops);
         let black_bishops = pos.board().black().intersect(bishops);
 
         if white_bishops.count() >= 2 {
-            state.mg += 10;
-            state.eg += 8;
+            state.mg += cfg.hce_bishop_pair_bonus_mg.value;
+            state.eg += cfg.hce_bishop_pair_bonus_eg.value;
         }
 
         if black_bishops.count() >= 2 {
-            state.mg -= 10;
-            state.eg -= 8;
+            state.mg -= cfg.hce_bishop_pair_bonus_mg.value;
+            state.eg -= cfg.hce_bishop_pair_bonus_eg.value;
         }
     }
 
     #[cfg(feature = "classical")]
-    fn mg_rook_files(pos: &Chess, sq: Square) -> i32 {
+    fn rook_files(cfg: &Config, pos: &Chess, sq: Square) -> (i32, i32) {
         let board = pos.board();
         let us = pos.turn();
         let file = FILES_TABLE[sq.file() as usize];
         let all_pawns = board.pawns();
 
         if file.intersect(all_pawns).count() == 0 {
-            return 20;
+            return (
+                cfg.hce_rook_open_file_bonus_mg.value,
+                cfg.hce_rook_open_file_bonus_eg.value,
+            );
         }
 
         let our_pawns = board.by_piece(Piece {
@@ -204,17 +220,20 @@ impl Eval {
         });
 
         if file.intersect(our_pawns).count() == 0 {
-            return 10;
+            return (
+                cfg.hce_rook_semi_open_file_bonus_mg.value,
+                cfg.hce_rook_semi_open_file_bonus_eg.value,
+            );
         }
 
-        0
+        (0, 0)
     }
 
     #[cfg(feature = "classical")]
-    fn eval_white(pos: &Chess, sq: Square, piece: Piece, state: &mut EvalState) {
+    fn eval_white(cfg: &Config, pos: &Chess, sq: Square, piece: Piece, state: &mut EvalState) {
         let piece_index = (piece.role as usize - 1) * 2;
         let square_index = sq as usize;
-        let (piece_mg, piece_eg) = EVAL_ROLES[piece.role as usize - 1](pos, sq, piece);
+        let (piece_mg, piece_eg) = EVAL_ROLES[piece.role as usize - 1](cfg, pos, sq, piece);
 
         state.mg += MG_TABLE[piece_index][square_index];
         state.eg += EG_TABLE[piece_index][square_index];
@@ -225,10 +244,10 @@ impl Eval {
     }
 
     #[cfg(feature = "classical")]
-    fn eval_black(pos: &Chess, sq: Square, piece: Piece, state: &mut EvalState) {
+    fn eval_black(cfg: &Config, pos: &Chess, sq: Square, piece: Piece, state: &mut EvalState) {
         let piece_index = (piece.role as usize - 1) * 2 + 1;
         let square_index = sq as usize;
-        let (piece_mg, piece_eg) = EVAL_ROLES[piece.role as usize - 1](pos, sq, piece);
+        let (piece_mg, piece_eg) = EVAL_ROLES[piece.role as usize - 1](cfg, pos, sq, piece);
 
         state.mg -= MG_TABLE[piece_index][square_index];
         state.eg -= EG_TABLE[piece_index][square_index];
@@ -239,27 +258,29 @@ impl Eval {
     }
 
     #[cfg(feature = "classical")]
-    fn tempo(pos: &Chess, state: &mut EvalState) {
-        state.mg += 28
-            * match pos.turn() {
-                Color::White => 1,
-                Color::Black => -1,
-            };
+    fn tempo(cfg: &Config, pos: &Chess, state: &mut EvalState) {
+        let c = match pos.turn() {
+            Color::White => 1,
+            Color::Black => -1,
+        };
+
+        state.mg += cfg.hce_tempo_bonus_mg.value * c;
+        state.eg += cfg.hce_tempo_bonus_eg.value * c;
     }
 
     #[cfg(feature = "classical")]
-    pub fn eval(pos: &Chess) -> i32 {
+    pub fn eval(cfg: &Config, pos: &Chess) -> i32 {
         let mut state = EvalState::default();
 
         for (sq, piece) in pos.board() {
             match piece.color {
-                Color::White => Self::eval_white(pos, sq, piece, &mut state),
-                Color::Black => Self::eval_black(pos, sq, piece, &mut state),
+                Color::White => Self::eval_white(cfg, pos, sq, piece, &mut state),
+                Color::Black => Self::eval_black(cfg, pos, sq, piece, &mut state),
             };
         }
 
-        Self::tempo(pos, &mut state);
-        Self::bishop_pair(pos, &mut state);
+        Self::tempo(cfg, pos, &mut state);
+        Self::bishop_pair(cfg, pos, &mut state);
 
         (state.mg * state.phase + state.eg * (24 - state.phase)) / 24
             * if pos.turn() == Color::White { 1 } else { -1 }

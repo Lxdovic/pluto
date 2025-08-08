@@ -221,7 +221,7 @@ impl Search {
         let static_eval = Eval::nnue_eval(&self.state.nnue, pos);
 
         #[cfg(feature = "classical")]
-        let static_eval = Eval::eval(pos);
+        let static_eval = Eval::eval(&self.state.cfg, pos);
 
         /* Improving */
         let improving = match ply {
@@ -423,7 +423,7 @@ impl Search {
         let stand_pat = Eval::nnue_eval(&self.state.nnue, pos);
 
         #[cfg(feature = "classical")]
-        let stand_pat = Eval::eval(pos);
+        let stand_pat = Eval::eval(&self.state.cfg, pos);
 
         if limit == 0 {
             return stand_pat;
