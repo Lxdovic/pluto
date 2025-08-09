@@ -133,9 +133,12 @@ impl Search {
         self.state.tc.stop = stop.clone();
 
         let mut best_move = None;
+        let mut alpha = -100000;
+        let mut beta = 100000;
+        let mut current_depth = 0;
 
         /* Iterative deepening */
-        for current_depth in 0..self.state.params.depth {
+        while current_depth < self.state.params.depth {
             if TimeMode::is_finite(&self.state.tc.time_mode)
                 && (self.state.tc.elapsed() * self.state.cfg.tc_elapsed_factor.value) as u128
                     > self.state.tc.play_time
@@ -145,7 +148,7 @@ impl Search {
 
             self.state.info.depth = current_depth + 1;
             let pos = self.state.game.clone();
-            let iteration_score = self.negamax(&pos, self.state.info.depth, -100000, 100000, 0);
+            let iteration_score = self.negamax(&pos, self.state.info.depth, alpha, beta, 0);
 
             if self.state.tc.is_time_up() {
                 break;
@@ -155,6 +158,15 @@ impl Search {
 
             let elapsed = self.state.tc.elapsed();
             let pv = self.state.pv.collect();
+
+            if iteration_score <= alpha || iteration_score >= beta {
+                alpha = -100000;
+                beta = 100000;
+                continue;
+            }
+
+            alpha = iteration_score - 60;
+            beta = iteration_score + 60;
 
             if print {
                 Logger::log(&format!(
@@ -167,6 +179,8 @@ impl Search {
                     pv.join(" ")
                 ));
             }
+
+            current_depth += 1;
         }
 
         if best_move.is_none() {
