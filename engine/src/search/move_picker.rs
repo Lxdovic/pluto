@@ -19,25 +19,11 @@ use super::{tt::TranspositionTableEntry, SearchState};
 use shakmaty::{Move, MoveList, Role};
 
 const MO_FACTOR: i32 = 10000;
+use std::cmp::Reverse;
 
 pub struct MovePicker<'a> {
-    order: Vec<&'a Move>,
-    curr: usize,
-}
-
-impl<'a> Iterator for MovePicker<'a> {
-    type Item = &'a Move;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.curr >= self.order.len() {
-            return None;
-        }
-
-        let move_ref = self.order[self.curr];
-        self.curr += 1;
-
-        Some(move_ref)
-    }
+    moves: Vec<(&'a Move, i32)>,
+    index: usize,
 }
 
 impl<'a> MovePicker<'a> {
@@ -49,14 +35,15 @@ impl<'a> MovePicker<'a> {
     ) -> Self {
         let mut scored_moves: Vec<(&'a Move, i32)> = moves
             .iter()
-            .map(|m_ref| (m_ref, Self::move_importance(state, entry, ply, m_ref)))
+            .map(|m| (m, Self::move_importance(state, entry, ply, m)))
             .collect();
 
-        scored_moves.sort_by_key(|&(_, score)| -score);
+        scored_moves.sort_by_key(|&(_, score)| Reverse(score));
 
-        let order: Vec<&'a Move> = scored_moves.into_iter().map(|(m_ref, _)| m_ref).collect();
-
-        Self { order, curr: 0 }
+        Self {
+            moves: scored_moves,
+            index: 0,
+        }
     }
 
     fn move_importance(
@@ -89,3 +76,18 @@ impl<'a> MovePicker<'a> {
         state.hist.get(m.role(), m.to())
     }
 }
+
+impl<'a> Iterator for MovePicker<'a> {
+    type Item = &'a Move;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index >= self.moves.len() {
+            return None;
+        }
+
+        let next_move = self.moves[self.index].0;
+        self.index += 1;
+        Some(next_move)
+    }
+}
+
