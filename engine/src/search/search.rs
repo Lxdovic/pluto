@@ -19,7 +19,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 use crate::bound::Bound;
-use crate::eval::Eval;
+use crate::eval::{Eval, MG_PIECE_VALUES};
 use crate::logger::Logger;
 #[cfg(not(feature = "classical"))]
 use crate::nnue::{OFF, ON};
@@ -430,9 +430,11 @@ impl Search {
         if limit == 0 {
             return stand_pat;
         }
+
         if stand_pat >= beta {
             return beta;
         }
+
         if alpha < stand_pat {
             alpha = stand_pat;
         }
@@ -440,6 +442,12 @@ impl Search {
         let moves = pos.capture_moves();
 
         for m in moves {
+            let captured_value = MG_PIECE_VALUES[m.capture().unwrap() as usize - 1];
+
+            if stand_pat + captured_value + 200 < alpha {
+                continue;
+            }
+
             let mut pos = pos.clone();
             self.make_move(&mut pos, &m, stand_pat);
             let score = -self.quiesce(&pos, -beta, -alpha, limit - 1);
