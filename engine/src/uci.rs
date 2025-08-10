@@ -182,7 +182,7 @@ impl UciController {
                 self.search.state.nnue = NNUEState::from_board(self.search.state.game.board());
             }
             self.search.state.game = game;
-            self.search.state.params.depth = 5;
+            self.search.state.params.depth = 10;
             self.search.state.tc.time_mode = TimeMode::Infinite;
 
             self.search.go(false, &stop);

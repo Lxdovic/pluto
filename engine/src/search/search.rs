@@ -440,8 +440,9 @@ impl Search {
         }
 
         let moves = pos.capture_moves();
+        let mp = MovePicker::new(&moves, &self.state, &Default::default(), 0);
 
-        for m in moves {
+        for m in mp {
             let captured_value = MG_PIECE_VALUES[m.capture().unwrap() as usize - 1];
 
             if stand_pat + captured_value + 200 < alpha {
@@ -449,7 +450,7 @@ impl Search {
             }
 
             let mut pos = pos.clone();
-            self.make_move(&mut pos, &m, stand_pat);
+            self.make_move(&mut pos, m, stand_pat);
             let score = -self.quiesce(&pos, -beta, -alpha, limit - 1);
             self.undo_move();
 
