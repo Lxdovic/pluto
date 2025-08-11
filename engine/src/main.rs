@@ -23,6 +23,7 @@ mod eval;
 mod logger;
 #[cfg(not(feature = "classical"))]
 mod nnue;
+mod packing;
 mod search;
 mod time_control;
 mod uci;

@@ -19,10 +19,11 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 use crate::bound::Bound;
-use crate::eval::{Eval, MG_PIECE_VALUES};
+use crate::eval::{Eval, PIECE_VALUES};
 use crate::logger::Logger;
 #[cfg(not(feature = "classical"))]
 use crate::nnue::{OFF, ON};
+use crate::packing::extract_mg;
 use crate::time_control::time_mode::TimeMode;
 use shakmaty::zobrist::{Zobrist64, ZobristHash};
 use shakmaty::{CastlingMode, Chess, EnPassantMode, Move, Position};
@@ -443,7 +444,7 @@ impl Search {
         let mp = MovePicker::new(&moves, &self.state, &Default::default(), 0);
 
         for m in mp {
-            let captured_value = MG_PIECE_VALUES[m.capture().unwrap() as usize - 1];
+            let captured_value = extract_mg(PIECE_VALUES[m.capture().unwrap() as usize - 1]);
 
             if stand_pat + captured_value + 200 < alpha {
                 continue;
