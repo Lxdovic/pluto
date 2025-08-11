@@ -69,16 +69,9 @@ Pluto is tested with OpenBench, a distributed testing framework for UCI chess en
 
 To build the engine, clone the repository and use one of the following options:
 
+### NNUE
 
-### Make
-
-This will build Pluto with NNUE
-
-```bash
-make
-```
-
-### Cargo
+This will build Pluto NNUE
 
 ```bash
 cargo build --release --bin engine 
@@ -86,7 +79,7 @@ cargo build --release --bin engine
 
 ### Classical
 
-This allows you to build Pluto without NNUE, using HCE instead
+This allows you to build Pluto HCE
 
 ```bash
 cargo build --release --bin engine --features classical
