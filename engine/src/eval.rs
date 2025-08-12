@@ -18,7 +18,6 @@
 /// Position evaluation module containing piece-square tables and evaluation functions.
 #[cfg(not(feature = "classical"))]
 use crate::nnue::{NNUEState, NNUE};
-#[cfg(feature = "classical")]
 use crate::packing::s;
 #[cfg(feature = "classical")]
 use crate::packing::{extract_eg, extract_mg};
@@ -255,7 +254,6 @@ impl Eval {
 const TABLE: [[i32; 64]; 12] = Eval::init_piece_table();
 #[cfg(feature = "classical")]
 const PESTO_TABLE: [[i32; 64]; 6] = [PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING];
-#[cfg(feature = "classical")]
 #[rustfmt::skip]
 pub const PIECE_VALUES: [i32; 6] = [s(82, 94), s(337, 281), s(365, 297), s(447, 512), s(1025, 936), s(0, 0)];
 #[cfg(feature = "classical")]
