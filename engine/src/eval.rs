@@ -280,7 +280,7 @@ const KING_SHIELD: [i32; 9] = [s(0, 0), s(1, 1), s(2, 2), s(3, 3), s(4, 4), s(5,
 #[cfg(feature = "classical")]
 const ROOK_FILES: [i32; 2] = [s(20, 0), s(10, 0)];
 #[cfg(feature = "classical")]
-const BISHOP_PAIR: i32 = s(10, 8);
+const BISHOP_PAIR: i32 = s(10, 40);
 
 #[cfg(feature = "classical")]
 const DOUBLED: [i32; 9] = [
