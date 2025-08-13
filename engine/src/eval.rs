@@ -122,7 +122,10 @@ impl Eval {
         });
 
         if isolation.intersect(their_pawns).count() == 0 {
-            return PASSED;
+            return match piece.color {
+                Color::White => PASSED[sq as usize ^ 56],
+                Color::Black => PASSED[sq as usize],
+            };
         }
 
         0
@@ -271,7 +274,17 @@ const EVAL_ROLES: [EvalRoleFn; 6] = [
 ];
 
 #[cfg(feature = "classical")]
-const PASSED: i32 = s(10, 10);
+#[rustfmt::skip]
+const PASSED: [i32; 64] = [
+    s(  0,  0), s(  0,  0), s(  0,  0), s(  0,  0), s(  0,  0), s(  0,  0), s(  0,  0), s(  0,  0),
+    s(  8, 10), s(  8, 10), s(  8, 10), s(  8, 10), s(  8, 10), s(  8, 10), s(  8, 10), s(  8, 10),
+    s(  6,  8), s(  6,  8), s(  6,  8), s(  6,  8), s(  6,  8), s(  6,  8), s(  6,  8), s(  6,  8),
+    s(  4,  6), s(  4,  6), s(  4,  6), s(  4,  6), s(  4,  6), s(  4,  6), s(  4,  6), s(  4,  6),
+    s(  2,  3), s(  2,  3), s(  2,  3), s(  2,  3), s(  2,  3), s(  2,  3), s(  2,  3), s(  2,  3),  
+    s(  1,  1), s(  1,  1), s(  1,  1), s(  1,  1), s(  1,  1), s(  1,  1), s(  1,  1), s(  1,  1), 
+    s(  0,  0), s(  0,  0), s(  0,  0), s(  0,  0), s(  0,  0), s(  0,  0), s(  0,  0), s(  0,  0), 
+    s(  0,  0), s(  0,  0), s(  0,  0), s(  0,  0), s(  0,  0), s(  0,  0), s(  0,  0), s(  0,  0),
+];
 #[cfg(feature = "classical")]
 const ISOLATED: i32 = s(-10, -10);
 #[cfg(feature = "classical")]
