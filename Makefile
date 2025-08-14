@@ -17,9 +17,9 @@ else
 endif
 
 ifeq ($(HCE),true)
-	FEATURES := tuning,log,classical
+	FEATURES := datagen,tuning,log,classical
 else
-	FEATURES := tuning,log
+	FEATURES := datagen,tuning,log
 endif
 
 NAME := $(EXE)$(EXT)

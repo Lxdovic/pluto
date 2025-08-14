@@ -20,9 +20,9 @@ use std::sync::Arc;
 
 use crate::bound::Bound;
 use crate::eval::{Eval, PIECE_VALUES};
-use crate::logger::Logger;
 #[cfg(not(feature = "classical"))]
 use crate::nnue::{OFF, ON};
+use crate::out;
 use crate::packing::extract_mg;
 use crate::time_control::time_mode::TimeMode;
 use shakmaty::zobrist::{Zobrist64, ZobristHash};
@@ -124,7 +124,7 @@ impl Search {
         self.state.hstack.pop();
     }
 
-    pub fn go(&mut self, print: bool, stop: &Arc<AtomicBool>) {
+    pub fn go(&mut self, stop: &Arc<AtomicBool>) {
         self.state
             .tc
             .setup(&self.state.params, &self.state.game, &self.state.cfg);
@@ -169,16 +169,18 @@ impl Search {
             alpha = iteration_score - 60;
             beta = iteration_score + 60;
 
-            if print {
-                Logger::log(&format!(
+            self.state.info.best_score = iteration_score;
+
+            if !self.state.cfg.silent_uci.value {
+                out!(
                     "info depth {} nodes {} nps {} score cp {} time {} pv {}",
                     self.state.info.depth,
                     self.state.info.nodes,
                     self.state.info.nodes as u128 * 1000 / (elapsed + 1) as u128,
                     iteration_score,
                     elapsed,
-                    pv.join(" ")
-                ));
+                    pv.join(" "),
+                );
             }
 
             current_depth += 1;
@@ -188,11 +190,11 @@ impl Search {
             best_move = self.state.pv.get_best_move();
         }
 
-        if print {
-            Logger::log(&format!(
+        if !self.state.cfg.silent_uci.value {
+            out!(
                 "bestmove {}",
                 best_move.unwrap().to_uci(CastlingMode::Standard)
-            ));
+            );
         }
     }
 

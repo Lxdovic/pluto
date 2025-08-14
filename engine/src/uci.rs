@@ -21,11 +21,13 @@ use std::sync::mpsc::{self, Sender};
 use std::sync::Arc;
 use std::{io, thread};
 
-use crate::logger::Logger;
 #[cfg(not(feature = "classical"))]
 use crate::nnue::NNUEState;
+use crate::out;
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 use crate::postMessage;
+#[cfg(feature = "datagen")]
+use crate::rng::Rng;
 use crate::search::search::Search;
 use crate::search::tt::TranspositionTable;
 use crate::time_control::time_mode::TimeMode;
@@ -34,7 +36,13 @@ use queues::{queue, IsQueue, Queue};
 use shakmaty::fen::Fen;
 use shakmaty::uci::UciMove;
 use shakmaty::zobrist::ZobristHash;
+#[cfg(feature = "datagen")]
+use shakmaty::EnPassantMode;
 use shakmaty::{CastlingMode, Chess, Position};
+#[cfg(feature = "datagen")]
+use std::fs::File;
+#[cfg(feature = "datagen")]
+use std::io::BufRead;
 
 pub struct UciController {
     search: Search,
@@ -126,8 +134,89 @@ impl UciController {
             "ucinewgame" => self.handle_ucinewgame(),
             "position" => self.handle_position(tokens),
             "go" => self.handle_go(tokens, stop),
-            _ => Logger::log(&format!("Unknown command: {}", first_token)),
+            #[cfg(feature = "datagen")]
+            "genfens" => self.handle_genfens(tokens, stop),
+            _ => out!("Unknown command: {}", first_token),
         }
+    }
+
+    #[cfg(feature = "datagen")]
+    fn handle_genfens(&mut self, tokens: &mut Queue<&str>, stop: Arc<AtomicBool>) {
+        let mut fens_amount = tokens.remove().unwrap().parse::<u32>().unwrap();
+        let _ = tokens.remove();
+        let seed = tokens.remove().unwrap();
+        let _ = tokens.remove();
+        let book_path = tokens.remove().unwrap();
+        let mut rng = Rng::new(seed.parse::<u64>().unwrap());
+
+        let mut book_contents: Vec<String> = Vec::new();
+
+        if book_path != "None" {
+            let file = File::open(book_path);
+
+            if let Ok(f) = file {
+                let reader = io::BufReader::new(f);
+
+                book_contents = reader
+                    .lines()
+                    .map_while(Result::ok)
+                    .collect::<Vec<String>>();
+            }
+        }
+
+        while fens_amount > 0 {
+            self.parse_command("ucinewgame", stop.clone());
+            self.search.state.cfg.set("SilentUCI", "true");
+
+            if !book_contents.is_empty() {
+                let idx = rng.gen_range(0..book_contents.len());
+                let random_line = &book_contents[idx];
+
+                self.parse_command(
+                    format!("position fen {}", random_line).as_str(),
+                    stop.clone(),
+                );
+            }
+
+            let pos = Self::random_play(self.search.state.game.clone(), &mut rng, 5);
+
+            if pos.legal_moves().is_empty() {
+                continue;
+            }
+
+            self.parse_command(format!("go depth {}", 8).as_str(), stop.clone());
+
+            if self.search.state.info.best_score.abs() > 300 {
+                continue;
+            }
+
+            out!(
+                "info string genfens {}",
+                Fen::from_position(pos, EnPassantMode::Legal)
+            );
+
+            fens_amount -= 1;
+
+            self.search.state.cfg.set("SilentUCI", "false");
+        }
+
+        if tokens.peek().is_ok() {
+            self.parse_tokens(tokens, stop);
+        }
+    }
+
+    fn random_play(pos: Chess, rng: &mut Rng, depth: i32) -> Chess {
+        if depth == 0 {
+            return pos;
+        }
+
+        let mut pos = pos.clone();
+        let moves = pos.legal_moves();
+        let r = rng.gen_range(0..moves.len());
+
+        pos.play_unchecked(&moves[r]);
+
+        Self::random_play(pos, rng, depth - 1)
     }
 
     fn handle_print(&self, tokens: &mut Queue<&str>) {
@@ -136,7 +225,7 @@ impl UciController {
         match scope {
             #[cfg(feature = "tuning")]
             "spsa" => self.handle_print_spsa(tokens),
-            _ => Logger::log(&format!("unknown scope: {}", scope)),
+            _ => out!("unknown scope: {}", scope),
         }
     }
 
@@ -146,7 +235,7 @@ impl UciController {
 
         match target {
             "workload" => self.handle_print_spsa_workload(),
-            _ => Logger::log(&format!("unknown target: {}", target)),
+            _ => out!("unknown target: {}", target),
         }
     }
 
@@ -173,6 +262,8 @@ impl UciController {
         let mut total = 0;
         let start_time = Local::now().timestamp_millis();
 
+        self.search.state.cfg.set("SilentUCI", "true");
+
         for position in positions {
             let fen: Fen = position.parse().ok().unwrap();
             let game = fen.into_position(CastlingMode::Standard).ok().unwrap();
@@ -185,13 +276,14 @@ impl UciController {
             self.search.state.params.depth = 10;
             self.search.state.tc.time_mode = TimeMode::Infinite;
 
-            self.search.go(false, &stop);
+            self.search.go(&stop);
 
             total += self.search.state.info.nodes;
         }
 
         let elapsed = Local::now().timestamp_millis() - start_time;
 
+        self.search.state.cfg.set("SilentUCI", "false");
         self.search.state.game = Chess::default();
 
         #[cfg(not(feature = "classical"))]
@@ -220,10 +312,12 @@ impl UciController {
                 "depth" => self.handle_go_depth(tokens, stop),
                 "movetime" => self.handle_go_movetime(tokens, stop),
                 "infinite" => self.handle_go_infinite(tokens, stop),
-                _ => Logger::log(&format!("Unknown go command: {}", token.unwrap())),
+                _ => out!("Unknown go command: {}", token.unwrap()),
             },
             false => {
-                self.search.go(true, &stop);
+                self.search.state.tc.stop.store(false, Ordering::SeqCst);
+                self.search.go(&stop);
+                self.search.state.tc.stop.store(true, Ordering::SeqCst);
             }
         }
     }
@@ -297,7 +391,7 @@ impl UciController {
                 self.handle_position_startpos(tokens);
             }
             "fen" => self.handle_position_fen(tokens),
-            _ => Logger::log(&format!("Unknown position command: {}", token)),
+            _ => out!("Unknown position command: {}", token),
         }
     }
 
@@ -394,8 +488,8 @@ impl UciController {
         }
 
         match name {
-            "MoveOverhead" => Logger::log("info string MoveOverhead is not yet supported."),
-            "Threads" => Logger::log("info string Multithreading is not yet supported."),
+            "MoveOverhead" => out!("info string MoveOverhead is not yet supported."),
+            "Threads" => out!("info string Multithreading is not yet supported."),
             "Hash" => {
                 let size = value.parse::<u32>().unwrap();
                 let bytes = size * 1024 * 1024;
@@ -419,7 +513,7 @@ impl UciController {
     }
 
     fn handle_isready(&self) {
-        Logger::log("readyok");
+        out!("readyok");
     }
 
     fn handle_quit(&self) {
@@ -427,17 +521,17 @@ impl UciController {
     }
 
     fn handle_uci(&self) {
-        Logger::log(r#"id name Pluto 1.0.1"#);
-        Logger::log(r#"id author Lxdovic"#);
+        out!(r#"id name Pluto 1.0.1"#);
+        out!(r#"id author Lxdovic"#);
 
         #[cfg(not(feature = "classical"))]
-        Logger::log(r#"info string using NNUE eval"#);
+        out!(r#"info string using NNUE eval"#);
 
         #[cfg(feature = "classical")]
-        Logger::log(r#"info string using HCE eval"#);
+        out!(r#"info string using HCE eval"#);
 
         self.search.state.cfg.print_uci_options();
 
-        Logger::log(r#"uciok"#);
+        out!(r#"uciok"#);
     }
 }

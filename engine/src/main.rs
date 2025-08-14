@@ -20,16 +20,16 @@ use std::env;
 mod bound;
 mod config;
 mod eval;
+#[macro_use]
 mod logger;
 #[cfg(not(feature = "classical"))]
 mod nnue;
 mod packing;
+mod rng;
 mod search;
 mod time_control;
 mod uci;
 
-#[cfg(feature = "log")]
-use logger::Logger;
 #[cfg(feature = "log")]
 use simplelog::*;
 #[cfg(feature = "log")]
@@ -53,7 +53,7 @@ pub fn main() {
         WriteLogger::init(LevelFilter::Debug, Config::default(), file).unwrap();
 
         std::panic::set_hook(Box::new(|panic_info| {
-            Logger::log(format!("{:?}", panic_info).as_str());
+            out!("{:?}", panic_info);
             log::error!("Panic occurred: {:?}", panic_info);
             log::logger().flush();
         }));

@@ -19,4 +19,5 @@
 pub struct SearchInfo {
     pub nodes: u32,
     pub depth: u8,
+    pub best_score: i32,
 }

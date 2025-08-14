@@ -33,6 +33,7 @@ mod logger;
 #[cfg(not(feature = "classical"))]
 mod nnue;
 mod packing;
+mod rng;
 mod search;
 mod time_control;
 mod uci;

@@ -15,13 +15,14 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-use crate::logger::Logger;
+use crate::out;
 use std::fmt::{self};
 
 #[derive(Debug)]
 pub enum OptionKind {
     Spin,
     String,
+    Check,
 }
 
 impl OptionKind {
@@ -29,6 +30,7 @@ impl OptionKind {
         match self {
             Self::Spin => "spin",
             Self::String => "string",
+            Self::Check => "check",
         }
     }
 }
@@ -69,7 +71,8 @@ impl_fmt_spsa!(
     usize => "int",
     i64 => "int",
     u64 => "int",
-    f64 => "float"
+    f64 => "float",
+    bool => "BOOL (ERR, BOOL NOT TUNABLE)"
 );
 
 macro_rules! impl_fmt_display {
@@ -86,7 +89,7 @@ macro_rules! impl_fmt_display {
     };
 }
 
-impl_fmt_display!(i32, u8, usize, i64, u64, f64);
+impl_fmt_display!(i32, u8, usize, i64, u64, f64, bool);
 
 macro_rules! make_config {
     ($($field:ident: $t:ty = ($name:expr, $kind:expr, $val:expr, $min:expr, $max:expr, $tunable:expr);)*) => {
@@ -115,16 +118,16 @@ macro_rules! make_config {
                     $(
                         $name => {
                             if !cfg!(feature = "tuning") && self.$field.tunable {
-                                Logger::log(&format!("info string cannot modify tunable option in non tunable build"))
+                                out!("info string cannot modify tunable option in non tunable build");
                             }
                             else if let Ok(parsed) = val.parse::<$t>() {
                                 self.$field.value = parsed;
                             } else {
-                                Logger::log(&format!("info string invalid value for {}: {}", $name, val));
+                                out!("info string invalid value for {}: {}", $name, val)
                             }
                         },
                     )*
-                    _ => Logger::log(&format!("info string unknown option: {}", name)),
+                    _ => out!("info string unknown option: {}", name),
                 }
             }
 
@@ -139,7 +142,7 @@ macro_rules! make_config {
                 $(
 
                     if cfg!(feature = "tuning") || !self.$field.tunable {
-                        Logger::log(format!("{}", self.$field).as_str());
+                        out!("{}", self.$field);
                     }
                 )*
             }
@@ -151,6 +154,7 @@ make_config! {
     move_overhead: usize = ("MoveOverhead", OptionKind::Spin, 0, 0, 10000, false);
     threads: u8 = ("Threads", OptionKind::Spin, 1, 1, 1, false);
     hash: usize = ("Hash", OptionKind::Spin, 255, 1, 1024, false);
+    silent_uci: bool = ("SilentUCI", OptionKind::Check, false, false, true, false);
     qsearch_depth: u8 = ("QSearchDepth", OptionKind::Spin, 17, 1, 20, true);
     rfp_depth: u8 = ("RFPDepth", OptionKind::Spin, 11, 1, 20, true);
     rfp_base_margin: i32 = ("RFPBaseMargin", OptionKind::Spin, 57, 1, 200, true);
