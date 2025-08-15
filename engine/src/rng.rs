@@ -1,7 +1,10 @@
+
+#[cfg(feature = "datagen")]
 pub struct Rng {
     state: u64,
 }
 
+#[cfg(feature = "datagen")]
 impl Rng {
     pub fn new(seed: u64) -> Self {
         Self { state: seed }

@@ -1,0 +1,8 @@
+[package]
+name = "datagen"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+pgn-reader = "0.28.0"
+shakmaty = "0.29.1"

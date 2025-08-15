@@ -77,6 +77,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "btoi"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b5ab9db53bcda568284df0fd39f6eac24ad6f7ba7ff1168b9e76eba6576b976"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "bullet-utils"
 version = "0.1.0"
 source = "git+https://github.com/jw1912/bullet#663133d485e0e421e05f7b0213d76c884f6a5fa5"
@@ -190,6 +199,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "datagen"
+version = "0.1.0"
+dependencies = [
+ "pgn-reader",
+ "shakmaty 0.29.1",
+]
+
+[[package]]
 name = "deranged"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -207,7 +224,7 @@ dependencies = [
  "queues",
  "serde",
  "serde_derive",
- "shakmaty",
+ "shakmaty 0.27.3",
  "simplelog",
  "toml",
  "wasm-bindgen",
@@ -358,7 +375,7 @@ version = "1.0.1"
 dependencies = [
  "bullet-utils",
  "bullet_lib",
- "shakmaty",
+ "shakmaty 0.27.3",
 ]
 
 [[package]]
@@ -397,6 +414,17 @@ name = "once_cell"
 version = "1.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
+
+[[package]]
+name = "pgn-reader"
+version = "0.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0e07db84c19e093741643903738788e6f773237c7eeb60f9a40191afc2a815a"
+dependencies = [
+ "btoi 0.5.0",
+ "memchr",
+ "shakmaty 0.29.1",
+]
 
 [[package]]
 name = "powerfmt"
@@ -559,7 +587,20 @@ checksum = "f414cadc4e727893d1a3b0dca62aaef4c1c821dcbd969f0b10a92e12d684d53a"
 dependencies = [
  "arrayvec",
  "bitflags 2.9.0",
- "btoi",
+ "btoi 0.4.3",
+ "nohash-hasher",
+ "serde",
+]
+
+[[package]]
+name = "shakmaty"
+version = "0.29.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "334bb41280a79854707d79c117c9818ddeaead15108e951c0b082ba2acedd0d1"
+dependencies = [
+ "arrayvec",
+ "bitflags 2.9.0",
+ "btoi 0.5.0",
  "nohash-hasher",
  "serde",
 ]

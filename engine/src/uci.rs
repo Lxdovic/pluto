@@ -28,6 +28,8 @@ use crate::out;
 use crate::postMessage;
 #[cfg(feature = "datagen")]
 use crate::rng::Rng;
+#[cfg(feature = "datagen")]
+use crate::rng::Rng;
 use crate::search::search::Search;
 use crate::search::tt::TranspositionTable;
 use crate::time_control::time_mode::TimeMode;
@@ -205,6 +207,7 @@ impl UciController {
         }
     }
 
+    #[cfg(feature = "datagen")]
     fn random_play(pos: Chess, rng: &mut Rng, depth: i32) -> Chess {
         if depth == 0 {
             return pos;
