@@ -61,7 +61,7 @@ pub fn extract_pgn(input: &Path, output: &Path) {
                 }
             }
 
-            out.push(format!("{} {}", pos.fen, pos.result));
+            out.push(format!("{}; c0 \"result: {}\"", pos.fen, pos.result));
         }
     }
 
