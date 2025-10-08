@@ -21,14 +21,43 @@ mod bound;
 mod config;
 mod eval;
 mod logger;
+#[cfg(not(feature = "classical"))]
 mod nnue;
+mod packing;
 mod search;
 mod time_control;
 mod uci;
 
+#[cfg(feature = "log")]
+use logger::Logger;
+#[cfg(feature = "log")]
+use simplelog::*;
+#[cfg(feature = "log")]
+use std::fs::OpenOptions;
+
 #[cfg(not(target_arch = "wasm32"))]
 pub fn main() {
     use uci::UciReader;
+
+    #[cfg(feature = "log")]
+    {
+        let mut log_path = env::temp_dir();
+        log_path.push("pluto.log");
+
+        let file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&log_path)
+            .expect("Unable to open log file");
+
+        WriteLogger::init(LevelFilter::Debug, Config::default(), file).unwrap();
+
+        std::panic::set_hook(Box::new(|panic_info| {
+            Logger::log(format!("{:?}", panic_info).as_str());
+            log::error!("Panic occurred: {:?}", panic_info);
+            log::logger().flush();
+        }));
+    }
 
     let args: Vec<String> = env::args().collect();
     UciReader::default().run(args);

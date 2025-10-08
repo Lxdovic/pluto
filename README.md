@@ -1,7 +1,15 @@
 
 # Pluto Chess Engine
-
-by [Lxdovic](https://github.com/Lxdovic)
+<div align="center">
+  <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/26b61936-4bdd-40c6-a189-da45de028821">
+   <img width="600" alt="Shows an illustrated sun in light color mode and a moon with stars in dark color mode." src="https://github.com/user-attachments/assets/50e5b2e0-4d13-48ca-bb30-53bcfeb64fab">
+  </picture>
+  
+  [![License][license-badge]][license-link]
+  [![Release][release-badge]][release-link]
+  [![Commits][commits-badge]][commits-link]
+</div>
 
 ## Table of Contents
 
@@ -19,9 +27,9 @@ by [Lxdovic](https://github.com/Lxdovic)
 
 ## Strength
 
-| Version        | Date        | Estimated ELO | CCRL |
-| -------------- | ----------- | ------------- | ---- |
-| 1.0.0          | 11 May 2025 | 2870          | 2872 |
+| Version        | Date        | Estimated ELO | CCRL 40/15 | CCRL Blitz 2+1 |
+| -------------- | ----------- | ------------- | ---- | ---- |
+| 1.0.0          | 11 May 2025 | 2870          | 2879 | 2976 |
 
 ## Testing
 
@@ -54,15 +62,27 @@ Pluto is tested with OpenBench, a distributed testing framework for UCI chess en
     - **Killer Moves**
     - **Transposition Tables**
 - Evaluation:
-    Pluto adopted Efficiently Updatable Neural Networks for its evaluation function quite early in development. Earlier versions were using Simple Eval/Pesto Eval
+    - **HCE** (classical build, see how to build it in #Building)
     - **NNUE (768->512)x2->1** Trained using [Bullet](https://github.com/jw1912/bullet) and Stockfish data.
 
 ## Building
 
-To build the engine, clone the repository and run the following command in your terminal:
+To build the engine, clone the repository and use one of the following options:
+
+### NNUE
+
+This will build Pluto NNUE
 
 ```bash
-make
+cargo build --release --bin engine 
+```
+
+### Classical
+
+This allows you to build Pluto HCE
+
+```bash
+cargo build --release --bin engine --features classical
 ```
 
 ## Contributors
@@ -81,3 +101,10 @@ Pluto was built using these resources and tools
 - [Bullet](https://github.com/jw1912/bullet) -> great tool for building NNUEs
 - [Stockfish](https://stockfishchess.org/) -> some implementation examples and ideas
 
+[license-badge]: https://img.shields.io/github/license/Lxdovic/Pluto?style=for-the-badge
+[release-badge]: https://img.shields.io/github/v/release/Lxdovic/Pluto?style=for-the-badge
+[commits-badge]: https://img.shields.io/github/commits-since/Lxdovic/Pluto/latest?style=for-the-badge
+
+[license-link]: https://github.com/Lxdovic/Pluto/blob/main/LICENSE
+[release-link]: https://github.com/Lxdovic/Pluto/releases/latest
+[commits-link]: https://github.com/Lxdovic/Pluto/commits/dev

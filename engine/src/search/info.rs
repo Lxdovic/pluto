@@ -15,13 +15,8 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#[derive(Default)]
 pub struct SearchInfo {
     pub nodes: u32,
     pub depth: u8,
-}
-
-impl Default for SearchInfo {
-    fn default() -> Self {
-        SearchInfo { nodes: 0, depth: 0 }
-    }
 }
