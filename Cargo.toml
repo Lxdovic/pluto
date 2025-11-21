@@ -3,7 +3,8 @@ resolver = "2"
 members = [ 
     "datagen",
     "engine",
-    "nnue"
+    "nnue",
+    "tuning"
 ]
 
 [profile.release]

@@ -184,9 +184,9 @@ impl Eval {
         let role_index = piece.role as usize - 1;
         let piece_index = role_index * 2 + (!piece.color as usize);
         let square_index = sq as usize;
-        let piece_score = EVAL_ROLES[role_index](pos, sq, piece);
+        // let piece_score = EVAL_ROLES[role_index](pos, sq, piece);
 
-        state.eval[piece.color as usize] += TABLE[piece_index][square_index] + piece_score;
+        state.eval[piece.color as usize] += TABLE[piece_index][square_index];
         state.phase += GAME_PHASES[piece_index];
     }
 
@@ -203,8 +203,8 @@ impl Eval {
             Self::eval_piece(pos, sq, piece, &mut state);
         }
 
-        Self::tempo(pos, &mut state);
-        Self::bishop_pair(pos, &mut state);
+        // Self::tempo(pos, &mut state);
+        // Self::bishop_pair(pos, &mut state);
 
         let score = state.eval[Color::White as usize] - state.eval[Color::Black as usize];
         let mg = extract_mg(score);
@@ -212,6 +212,19 @@ impl Eval {
 
         (mg * state.phase + eg * (24 - state.phase)) / 24
             * if pos.turn() == Color::White { 1 } else { -1 }
+    }
+
+    pub fn phase(pos: &Chess) -> i32 {
+        let mut phase = 0;
+
+        for (_, piece) in pos.board() {
+            let role_index = piece.role as usize - 1;
+            let piece_index = role_index * 2 + (!piece.color as usize);
+
+            phase += GAME_PHASES[piece_index];
+        }
+
+        phase
     }
 
     #[cfg(feature = "classical")]
@@ -224,8 +237,8 @@ impl Eval {
 
         while p < 6 {
             while sq < 64 {
-                eg_table[pc][sq] = PIECE_VALUES[p] + PESTO_TABLE[p][sq ^ 56];
-                eg_table[pc + 1][sq] = PIECE_VALUES[p] + PESTO_TABLE[p][sq];
+                eg_table[pc][sq] = PIECE_VALUES[p] + PSQTS[p][sq ^ 56];
+                eg_table[pc + 1][sq] = PIECE_VALUES[p] + PSQTS[p][sq];
 
                 sq += 1;
             }
@@ -251,9 +264,9 @@ impl Eval {
 }
 
 #[cfg(feature = "classical")]
-const TABLE: [[i32; 64]; 12] = Eval::init_piece_table();
+pub const TABLE: [[i32; 64]; 12] = Eval::init_piece_table();
 #[cfg(feature = "classical")]
-const PESTO_TABLE: [[i32; 64]; 6] = [PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING];
+pub const PSQTS: [[i32; 64]; 6] = [PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING];
 #[rustfmt::skip]
 pub const PIECE_VALUES: [i32; 6] = [s(82, 94), s(337, 281), s(365, 297), s(447, 512), s(1025, 936), s(0, 0)];
 #[cfg(feature = "classical")]
@@ -261,7 +274,7 @@ const TEMPO: i32 = s(28, 0);
 #[cfg(feature = "classical")]
 const GAME_PHASES: [i32; 12] = [0, 0, 1, 1, 1, 1, 2, 2, 4, 4, 0, 0];
 #[cfg(feature = "classical")]
-const EVAL_ROLES: [EvalRoleFn; 6] = [
+pub const EVAL_ROLES: [EvalRoleFn; 6] = [
     Eval::eval_pawn,
     Eval::eval_knight,
     Eval::eval_bishop,
@@ -271,19 +284,19 @@ const EVAL_ROLES: [EvalRoleFn; 6] = [
 ];
 
 #[cfg(feature = "classical")]
-const PASSED: i32 = s(10, 10);
+pub const PASSED: i32 = s(10, 10);
 #[cfg(feature = "classical")]
-const ISOLATED: i32 = s(-10, -10);
+pub const ISOLATED: i32 = s(-10, -10);
 #[cfg(feature = "classical")]
 #[rustfmt::skip]
-const KING_SHIELD: [i32; 9] = [s(0, 0), s(1, 1), s(2, 2), s(3, 3), s(4, 4), s(5, 5), s(6, 6), s(7, 7), s(8, 8)];
+pub const KING_SHIELD: [i32; 9] = [s(0, 0), s(1, 1), s(2, 2), s(3, 3), s(4, 4), s(5, 5), s(6, 6), s(7, 7), s(8, 8)];
 #[cfg(feature = "classical")]
-const ROOK_FILES: [i32; 2] = [s(20, 0), s(10, 0)];
+pub const ROOK_FILES: [i32; 2] = [s(20, 0), s(10, 0)];
 #[cfg(feature = "classical")]
-const BISHOP_PAIR: i32 = s(10, 8);
+pub const BISHOP_PAIR: i32 = s(10, 8);
 
 #[cfg(feature = "classical")]
-const DOUBLED: [i32; 9] = [
+pub const DOUBLED: [i32; 9] = [
     s(5, 5),
     s(0, 0),
     s(-5, -5),
@@ -295,7 +308,7 @@ const DOUBLED: [i32; 9] = [
     s(-35, -35),
 ];
 #[cfg(feature = "classical")]
-const MOBILITY: [i32; 28] = [
+pub const MOBILITY: [i32; 28] = [
     s(0, 0),
     s(1, 1),
     s(2, 2),
@@ -386,7 +399,7 @@ const ADJACENT_AND_FILE_TABLE: [Bitboard; 8] = [
 
 #[cfg(feature = "classical")]
 #[rustfmt::skip]
-const PAWN: [i32; 64] = [
+pub const PAWN: [i32; 64] = [
     s(  0,   0), s(  0,   0), s(  0,   0), s(  0,   0), s(  0,   0), s(  0,   0), s( 0,   0), s(  0,   0),
     s( 98, 178), s(134, 173), s( 61, 158), s( 95, 134), s( 68, 147), s(126, 132), s(34, 165), s(-11, 187),
     s( -6,  94), s(  7, 100), s( 26,  85), s( 31,  67), s( 65,  56), s( 56,  53), s(25,  82), s(-20,  84),
@@ -399,7 +412,7 @@ const PAWN: [i32; 64] = [
 
 #[cfg(feature = "classical")]
 #[rustfmt::skip]
-const KNIGHT: [i32; 64] = [
+pub const KNIGHT: [i32; 64] = [
     s(-167, -58), s(-89, -38), s(-34, -13), s(-49, -28), s( 61, -31), s(-97, -27), s(-15, -63), s(-107, -99),
     s( -73, -25), s(-41,  -8), s( 72, -25), s( 36,  -2), s( 23,  -9), s( 62, -25), s(  7, -24), s( -17, -52),
     s( -47, -24), s( 60, -20), s( 37,  10), s( 65,   9), s( 84,  -1), s(129,  -9), s( 73, -19), s(  44, -41),
@@ -412,7 +425,7 @@ const KNIGHT: [i32; 64] = [
 
 #[cfg(feature = "classical")]
 #[rustfmt::skip]
-const BISHOP: [i32; 64] = [
+pub const BISHOP: [i32; 64] = [
     s(-29, -14), s( 4, -21), s(-82, -11), s(-37,  -8), s(-25, -7), s(-42,  -9), s(  7, -17), s( -8, -24),
     s(-26,  -8), s(16,  -4), s(-18,   7), s(-13, -12), s( 30, -3), s( 59, -13), s( 18,  -4), s(-47, -14),
     s(-16,   2), s(37,  -8), s( 43,   0), s( 40,  -1), s( 35, -2), s( 50,   6), s( 37,   0), s( -2,   4),
@@ -425,7 +438,7 @@ const BISHOP: [i32; 64] = [
 
 #[cfg(feature = "classical")]
 #[rustfmt::skip]
-const ROOK: [i32; 64] = [
+pub const ROOK: [i32; 64] = [
     s( 32, 13), s( 42, 10), s( 32, 18), s( 51, 15), s(63, 12), s( 9,  12), s( 31,   8), s( 43,   5),
     s( 27, 11), s( 32, 13), s( 58, 13), s( 62, 11), s(80, -3), s(67,   3), s( 26,   8), s( 44,   3),
     s( -5,  7), s( 19,  7), s( 26,  7), s( 36,  5), s(17,  4), s(45,  -3), s( 61,  -5), s( 16,  -3),
@@ -438,7 +451,7 @@ const ROOK: [i32; 64] = [
 
 #[cfg(feature = "classical")]
 #[rustfmt::skip]
-const QUEEN: [i32; 64] = [
+pub const QUEEN: [i32; 64] = [
     s(-28,  -9), s(  0,  22), s( 29,  22), s( 12,  27), s( 59,  27), s( 44,  19), s( 43,  10), s( 45,  20),
     s(-24, -17), s(-39,  20), s( -5,  32), s(  1,  41), s(-16,  58), s( 57,  25), s( 28,  30), s( 54,   0),
     s(-13, -20), s(-17,   6), s(  7,   9), s(  8,  49), s( 29,  47), s( 56,  35), s( 47,  19), s( 57,   9),
@@ -451,7 +464,7 @@ const QUEEN: [i32; 64] = [
 
 #[cfg(feature = "classical")]
 #[rustfmt::skip]
-const KING: [i32; 64] = [
+pub const KING: [i32; 64] = [
     s(-65, -74), s( 23, -35), s( 16, -18), s(-15, -18), s(-56, -11), s(-34,  15), s(  2,   4), s( 13, -17),
     s( 29, -12), s( -1,  17), s(-20,  14), s( -7,  17), s( -8,  17), s( -4,  38), s(-38,  23), s(-29,  11),
     s( -9,  10), s( 24,  17), s(  2,  23), s(-16,  15), s(-20,  20), s(  6,  45), s( 22,  44), s(-22,  13),

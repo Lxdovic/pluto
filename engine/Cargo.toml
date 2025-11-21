@@ -7,7 +7,7 @@ description = "Pluto Chess Engine"
 repository = "https://github.com/Lxdovic/pluto"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["rlib"]
 name = "engine"
 path = "src/lib.rs"
 
@@ -16,7 +16,7 @@ name = "engine"
 path = "src/main.rs"
 
 [features]
-default = []
+default = ["classical"]
 tuning = []
 classical = []
 log = []
@@ -24,7 +24,7 @@ datagen = []
 
 [dependencies]
 queues = "1.1.0"
-shakmaty = "0.27.2"
+shakmaty = "0.29.1"
 serde_derive = "1.0.215"
 toml = "0.8.19"
 serde = "1.0.215"

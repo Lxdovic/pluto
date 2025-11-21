@@ -16,11 +16,13 @@
 */
 
 use std::process::exit;
+use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Sender};
 use std::sync::Arc;
 use std::{io, thread};
 
+use crate::eval::Eval;
 #[cfg(not(feature = "classical"))]
 use crate::nnue::NNUEState;
 use crate::out;
@@ -40,7 +42,7 @@ use shakmaty::uci::UciMove;
 use shakmaty::zobrist::ZobristHash;
 #[cfg(feature = "datagen")]
 use shakmaty::EnPassantMode;
-use shakmaty::{CastlingMode, Chess, Position};
+use shakmaty::{CastlingMode, Chess, FromSetup, Position};
 #[cfg(feature = "datagen")]
 use std::fs::File;
 #[cfg(feature = "datagen")]
@@ -127,6 +129,7 @@ impl UciController {
         self.search.state.params.depth = u8::MAX;
 
         match first_token {
+            "eval" => self.handle_eval(tokens),
             "print" => self.handle_print(tokens),
             "bench" => self.handle_bench(stop),
             "uci" => self.handle_uci(),
@@ -140,6 +143,28 @@ impl UciController {
             "genfens" => self.handle_genfens(tokens, stop),
             _ => out!("Unknown command: {}", first_token),
         }
+    }
+
+    fn handle_eval(&mut self, tokens: &mut Queue<&str>) {
+        let mut fen_vec: Vec<&str> = vec![tokens.remove().ok().unwrap()];
+
+        loop {
+            let token = tokens.remove();
+
+            if token.is_err() {
+                break;
+            }
+
+            fen_vec.push(token.unwrap());
+        }
+
+        let position = fen_vec.join(" ");
+        let fen: Fen = position.parse().ok().unwrap();
+        let game: Chess = fen.into_position(CastlingMode::Standard).ok().unwrap();
+
+        let eval = Eval::eval(&game);
+
+        println!("info string eval cp {}", eval);
     }
 
     #[cfg(feature = "datagen")]
@@ -412,7 +437,7 @@ impl UciController {
                 let game = self.search.state.game.clone();
                 let legal = uci_move.unwrap().to_move(&game).ok().unwrap();
 
-                self.search.state.game = game.play(&legal).unwrap();
+                self.search.state.game = game.play(legal).unwrap();
                 self.search.state.hstack.push(
                     self.search
                         .state
@@ -459,7 +484,7 @@ impl UciController {
                 let game = self.search.state.game.clone();
                 let legal = uci_move.unwrap().to_move(&game).ok().unwrap();
 
-                self.search.state.game = game.play(&legal).unwrap();
+                self.search.state.game = game.play(legal).unwrap();
                 self.search.state.hstack.push(
                     self.search
                         .state

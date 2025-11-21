@@ -15,6 +15,8 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+pub const TEST: i32 = 0;
+
 #[cfg(target_arch = "wasm32")]
 use crate::uci::UciController;
 #[cfg(target_arch = "wasm32")]
@@ -28,11 +30,11 @@ use web_sys::Worker;
 
 mod bound;
 mod config;
-mod eval;
+pub mod eval;
 mod logger;
 #[cfg(not(feature = "classical"))]
 mod nnue;
-mod packing;
+pub mod packing;
 mod rng;
 mod search;
 mod time_control;

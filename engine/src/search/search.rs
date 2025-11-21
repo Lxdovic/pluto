@@ -112,7 +112,7 @@ impl Search {
                 _ => {}
             }
         }
-        pos.play_unchecked(m);
+        pos.play_unchecked(*m);
         self.state
             .hstack
             .push(pos.zobrist_hash(EnPassantMode::Legal), Some(eval));

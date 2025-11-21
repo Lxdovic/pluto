@@ -1,0 +1,9 @@
+[package]
+name = "tuning"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+shakmaty = "0.29.1"
+engine = { path = "../engine", features = ["classical"] }
+rand = "0.8"

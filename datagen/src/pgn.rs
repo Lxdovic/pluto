@@ -78,19 +78,19 @@ pub fn extract_pgn(input: &Path, output: &Path) {
 struct PositionWithComment {
     fen: String,
     comment: Option<String>,
-    result: f32,
+    result: String,
 }
 
 struct PositionCollector {
     positions: Vec<PositionWithComment>,
-    current_result: f32,
+    current_result: String,
 }
 
 impl PositionCollector {
     fn new() -> Self {
         Self {
             positions: Vec::new(),
-            current_result: 0.5,
+            current_result: "*".to_string(),
         }
     }
 }
@@ -101,7 +101,7 @@ impl Visitor for PositionCollector {
     type Output = Result<Vec<PositionWithComment>, Box<dyn Error>>;
 
     fn begin_tags(&mut self) -> ControlFlow<Self::Output, Self::Tags> {
-        self.current_result = 0.5; // reset for new game
+        self.current_result = "*".to_string();
         ControlFlow::Continue(None)
     }
 
@@ -123,12 +123,7 @@ impl Visitor for PositionCollector {
             tags.replace(pos);
         } else if name == b"Result" {
             if let Ok(s) = std::str::from_utf8(value.as_bytes()) {
-                self.current_result = match s {
-                    "1-0" => 1.0,
-                    "0-1" => 0.0,
-                    "1/2-1/2" => 0.5,
-                    _ => 0.5,
-                }
+                self.current_result = s.to_string()
             }
         }
         ControlFlow::Continue(())
@@ -146,7 +141,7 @@ impl Visitor for PositionCollector {
         self.positions.push(PositionWithComment {
             fen: Fen::from_position(&chess, shakmaty::EnPassantMode::Legal).to_string(),
             comment: None,
-            result: self.current_result,
+            result: self.current_result.clone(),
         });
         ControlFlow::Continue(chess)
     }
@@ -162,7 +157,7 @@ impl Visitor for PositionCollector {
                 self.positions.push(PositionWithComment {
                     fen: Fen::from_position(movetext, shakmaty::EnPassantMode::Legal).to_string(),
                     comment: None,
-                    result: self.current_result,
+                    result: self.current_result.clone(),
                 });
                 ControlFlow::Continue(())
             }
