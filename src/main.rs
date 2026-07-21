@@ -1,3 +1,6 @@
+pub mod uci;
+pub mod search;
+
 fn main() {
-    println!("Hello, world!");
-}
+    uci::Uci::default().run();
+}   
