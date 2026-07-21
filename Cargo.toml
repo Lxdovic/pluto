@@ -1,15 +1,6 @@
-[workspace]
-resolver = "2"
-members = [
-    "engine",
-    "nnue"
-]
+[package]
+name = "pluto"
+version = "0.1.0"
+edition = "2024"
 
-[profile.release]
-opt-level = 3
-debug = false
-rpath = false
-debug-assertions = false
-codegen-units = 1
-lto = true
-panic = "abort"
+[dependencies]
