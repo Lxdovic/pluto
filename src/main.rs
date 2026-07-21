@@ -3,4 +3,4 @@ pub mod search;
 
 fn main() {
     uci::Uci::default().run();
-}   
+}
