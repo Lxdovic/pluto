@@ -1,8 +1,7 @@
-EXE   := Pluto_1.0.1
-LXE   := Pluto_1.0.1
+EXE   := Pluto_2.0
+LXE   := Pluto_2.0
 _THIS := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 TMPDIR := $(_THIS)/tmp
-HCE   := true
 
 ifeq ($(OS),Windows_NT)
 	EXT := .exe
@@ -16,16 +15,10 @@ else
 	VER := linux
 endif
 
-ifeq ($(HCE),true)
-	FEATURES := tuning,log,classical
-else
-	FEATURES := tuning,log
-endif
-
 NAME := $(EXE)$(EXT)
 
 rule:
-	cargo rustc -r -p engine --bins --features $(FEATURES) -- -C target-cpu=native --emit link=$(NAME)
+	cargo rustc -- -C target-cpu=native --emit link=$(NAME)
 
 tmp-dir:
 	mkdir -p $(TMPDIR)
