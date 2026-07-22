@@ -49,7 +49,48 @@ impl Uci {
             "isready" => self.command_isready(),
             "go" => self.command_go(&mut queue),
             "quit" => self.command_quit(),
+            "setoption" => self.command_option(&mut queue),
+            "bench" => self.command_bench(),
             "stop" => self.command_stop(),
+            _ => {}
+        }
+    }
+
+    pub(crate) fn command_bench(&mut self) {
+        self.stop.store(false, Ordering::Relaxed);
+
+        let search_options = SearchOptions::default().depth(5);
+        let stop = Arc::clone(&self.stop);
+        let handle = std::thread::Builder::new()
+            .stack_size(SEARCH_STACK_SIZE)
+            .spawn(move || {
+                let result = Search::run(&search_options, stop);
+
+                println!("{} nodes {} nps", result.nodes, result.nps);
+            })
+            .unwrap();
+
+        // Store the handle of the new search thread
+        self.search_handle = Some(handle);
+
+        if let Some(handle) = self.search_handle.take() {
+            handle.join().unwrap();
+        }
+    }
+
+    fn command_option(&mut self, _queue: &mut VecDeque<&str>) {
+        let name = _queue.pop_front().unwrap_or("");
+
+        // TODO: may need to print "ignoring"
+        if name != "name" {
+            return;
+        }
+
+        let value = _queue.pop_front().unwrap_or("");
+
+        match value {
+            "Hash" => {}
+            "Threads" => {}
             _ => {}
         }
     }
@@ -72,6 +113,8 @@ impl Uci {
     fn command_uci(&self) {
         println!("id name {}", self.name);
         println!("id author {}", self.author);
+        println!("option name Hash type spin default 1 min 1 max 1");
+        println!("option name Threads type spin default 1 min 1 max 1");
         println!("uciok");
     }
 

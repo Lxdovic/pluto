@@ -17,3 +17,28 @@ impl Default for SearchOptions {
         }
     }
 }
+
+impl SearchOptions {
+    pub(crate) fn depth(mut self, depth: u32) -> Self {
+        self.depth = Some(depth);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn nodes(mut self, nodes: u64) -> Self {
+        self.nodes = Some(nodes);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn movetime(mut self, movetime: u64) -> Self {
+        self.movetime = Some(movetime);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn position(mut self, position: Chess) -> Self {
+        self.position = position;
+        self
+    }
+}

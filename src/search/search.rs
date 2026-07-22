@@ -13,6 +13,10 @@ impl Search {
         let rng = rand::random_range(0..moves.len());
         let bestmove = moves[rng].to_uci(CastlingMode::Standard).to_string();
 
-        SearchResult { bestmove }
+        SearchResult {
+            bestmove,
+            nodes: 1,
+            nps: 1,
+        }
     }
 }
