@@ -111,7 +111,7 @@ impl Uci {
     pub(crate) fn command_bench(&mut self) {
         self.stop.store(false, Ordering::Relaxed);
 
-        let search_options = SearchOptions::default().depth(5);
+        let search_options = SearchOptions::default().depth(4);
         let stop = Arc::clone(&self.stop);
         let handle = std::thread::Builder::new()
             .stack_size(SEARCH_STACK_SIZE)
@@ -194,8 +194,8 @@ impl Uci {
         // Reset the stop flag before starting a new search
         self.stop.store(false, Ordering::Relaxed);
 
-        let search_options = self.search_options.clone();
         let stop = Arc::clone(&self.stop);
+        let search_options = self.search_options.clone();
         let handle = std::thread::Builder::new()
             .stack_size(SEARCH_STACK_SIZE)
             .spawn(move || {
