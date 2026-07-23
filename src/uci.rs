@@ -1,4 +1,7 @@
 use crate::search::{search::Search, search_options::SearchOptions};
+use shakmaty::fen::Fen;
+use shakmaty::uci::UciMove;
+use shakmaty::{CastlingMode, Chess, Position};
 use std::collections::VecDeque;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -10,6 +13,7 @@ pub(crate) struct Uci {
     pub(crate) name: String,
     pub(crate) author: String,
     stop: Arc<AtomicBool>,
+    search_options: SearchOptions,
     search_handle: Option<JoinHandle<()>>,
 }
 
@@ -19,6 +23,7 @@ impl Default for Uci {
             name: String::from("Pluto"),
             author: String::from("Ludovic Debever"),
             stop: Arc::new(AtomicBool::new(false)),
+            search_options: SearchOptions::default(),
             search_handle: None,
         }
     }
@@ -48,11 +53,58 @@ impl Uci {
             "uci" => self.command_uci(),
             "isready" => self.command_isready(),
             "go" => self.command_go(&mut queue),
+            "position" => self.command_position(&mut queue),
             "quit" => self.command_quit(),
             "setoption" => self.command_option(&mut queue),
             "bench" => self.command_bench(),
             "stop" => self.command_stop(),
+            "ucinewgame" => {} // TODO: implement ucinewgame command
+            "debug" => self.command_debug(&mut queue),
             _ => {}
+        }
+    }
+
+    fn command_debug(&mut self, _queue: &mut VecDeque<&str>) {
+        println!("{:?}", self.search_options.position.board());
+    }
+
+    fn command_position(&mut self, queue: &mut VecDeque<&str>) {
+        let mut position = Chess::default();
+
+        while let Some(arg) = queue.pop_front() {
+            match arg {
+                "startpos" => position = Chess::default(),
+                "fen" => self.handle_position_fen(&mut position, queue),
+                "moves" => self.handle_position_moves(&mut position, queue),
+                _ => {}
+            }
+        }
+
+        self.search_options.position = position;
+    }
+
+    fn handle_position_fen(&mut self, position: &mut Chess, queue: &mut VecDeque<&str>) {
+        let fen_parts: Vec<String> = queue.drain(..6).map(|s| s.to_string()).collect();
+        let fen: Fen = fen_parts
+            .join(" ")
+            .parse()
+            .unwrap_or_else(|_| Fen::default());
+
+        *position = fen
+            .into_position(CastlingMode::Standard)
+            .unwrap_or_else(|_| Chess::default());
+    }
+
+    fn handle_position_moves(&mut self, position: &mut Chess, queue: &mut VecDeque<&str>) {
+        for move_str in queue.drain(..) {
+            let uci_move = move_str.parse().unwrap_or(UciMove::Null);
+
+            if let Ok(mv) = uci_move.to_move(position) {
+                *position = position
+                    .clone()
+                    .play(mv)
+                    .unwrap_or_else(|_| position.clone());
+            }
         }
     }
 
@@ -64,7 +116,8 @@ impl Uci {
         let handle = std::thread::Builder::new()
             .stack_size(SEARCH_STACK_SIZE)
             .spawn(move || {
-                let result = Search::run(&search_options, stop);
+                let mut search = Search::from(&search_options, stop);
+                let result = search.run();
 
                 println!("{} nodes {} nps", result.nodes, result.nps);
             })
@@ -123,14 +176,12 @@ impl Uci {
     }
 
     fn command_go(&mut self, queue: &mut VecDeque<&str>) {
-        let mut search_options = SearchOptions::default();
-
         #[cfg_attr(any(), rustfmt::skip)]
         while let Some(arg) = queue.pop_front() {
             match arg {
-                "depth" => search_options.depth = queue.pop_front().and_then(|s| s.parse::<u32>().ok()),
-                "nodes" => search_options.nodes = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
-                "movetime" => search_options.movetime = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
+                "depth" => self.search_options.depth = queue.pop_front().and_then(|s| s.parse::<u32>().ok()),
+                "nodes" => self.search_options.nodes = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
+                "movetime" => self.search_options.movetime = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
                 _ => {}
             }
         }
@@ -143,11 +194,13 @@ impl Uci {
         // Reset the stop flag before starting a new search
         self.stop.store(false, Ordering::Relaxed);
 
+        let search_options = self.search_options.clone();
         let stop = Arc::clone(&self.stop);
         let handle = std::thread::Builder::new()
             .stack_size(SEARCH_STACK_SIZE)
             .spawn(move || {
-                let result = Search::run(&search_options, stop);
+                let mut search = Search::from(&search_options, stop);
+                let result = search.run();
 
                 println!("bestmove {}", result.bestmove);
             })
