@@ -28,12 +28,12 @@ impl<'a> Search<'a> {
     pub(crate) fn run(&mut self) -> &SearchResult {
         let moves = self.opt.position.legal_moves();
         let mut bestmove: Option<Move> = None;
-        let mut bestscore = i32::MIN;
+        let mut bestscore = -MATE_SCORE;
         let start = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
 
         for m in moves {
             let child = self.opt.position.clone().play(m).unwrap();
-            let score = -self.negamax(&child, 3);
+            let score = -self.negamax(&child, 3, -MATE_SCORE, MATE_SCORE);
 
             if score > bestscore {
                 bestscore = score;
@@ -52,7 +52,7 @@ impl<'a> Search<'a> {
         &self.result
     }
 
-    fn negamax(&mut self, pos: &Chess, depth: u32) -> i32 {
+    fn negamax(&mut self, pos: &Chess, depth: u32, alpha: i32, beta: i32) -> i32 {
         self.result.nodes += 1;
 
         if depth == 0 {
@@ -60,13 +60,24 @@ impl<'a> Search<'a> {
         }
 
         let moves = pos.legal_moves();
+        let mut alpha = alpha;
         let mut best_score = -MATE_SCORE;
 
         for m in moves {
             let child = pos.clone().play(m).unwrap();
-            let score = -self.negamax(&child, depth - 1);
+            let score = -self.negamax(&child, depth - 1, -beta, -alpha);
 
-            best_score = best_score.max(score);
+            if score > best_score {
+                best_score = score;
+
+                if score > alpha {
+                    alpha = score;
+                }
+            }
+
+            if score >= beta {
+                return best_score;
+            }
         }
 
         best_score
