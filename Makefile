@@ -18,7 +18,7 @@ endif
 NAME := $(EXE)$(EXT)
 
 rule:
-	cargo rustc -- -C target-cpu=native --emit link=$(NAME)
+	cargo rustc --release -- -C target-cpu=native --emit link=$(NAME)
 
 tmp-dir:
 	mkdir -p $(TMPDIR)
