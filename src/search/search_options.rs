@@ -1,5 +1,6 @@
 use shakmaty::Chess;
 
+#[derive(Debug, Clone)]
 pub(crate) struct SearchOptions {
     pub(crate) depth: Option<u32>,
     pub(crate) nodes: Option<u64>,
