@@ -181,7 +181,7 @@ impl Uci {
             match arg {
                 "depth" => self.search_options.depth = queue.pop_front().and_then(|s| s.parse::<u32>().ok()),
                 "nodes" => self.search_options.nodes = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
-                "movetime" => self.search_options.movetime = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
+                "movetime" => self.search_options.move_time = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
                 _ => {}
             }
         }
@@ -202,7 +202,7 @@ impl Uci {
                 let mut search = Search::from(&search_options, stop);
                 let result = search.run();
 
-                println!("bestmove {}", result.bestmove);
+                println!("bestmove {}", result.best_move);
             })
             .unwrap();
 
