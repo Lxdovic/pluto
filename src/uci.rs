@@ -182,6 +182,8 @@ impl Uci {
                 "depth" => self.search_options.depth = queue.pop_front().and_then(|s| s.parse::<u32>().ok()),
                 "nodes" => self.search_options.nodes = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
                 "movetime" => self.search_options.move_time = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
+                "wtime" => self.search_options.wtime = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
+                "btime" => self.search_options.btime = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
                 _ => {}
             }
         }
