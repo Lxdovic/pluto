@@ -4,7 +4,7 @@ use shakmaty::Chess;
 pub(crate) struct SearchOptions {
     pub(crate) depth: Option<u32>,
     pub(crate) nodes: Option<u64>,
-    pub(crate) movetime: Option<u64>,
+    pub(crate) move_time: Option<u64>,
     pub(crate) position: Chess,
 }
 
@@ -13,7 +13,7 @@ impl Default for SearchOptions {
         SearchOptions {
             depth: None,
             nodes: None,
-            movetime: None,
+            move_time: None,
             position: Chess::default(),
         }
     }
@@ -32,8 +32,8 @@ impl SearchOptions {
     }
 
     #[allow(dead_code)]
-    pub(crate) fn movetime(mut self, movetime: u64) -> Self {
-        self.movetime = Some(movetime);
+    pub(crate) fn move_time(mut self, move_time: u64) -> Self {
+        self.move_time = Some(move_time);
         self
     }
 
