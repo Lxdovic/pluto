@@ -42,7 +42,7 @@ impl Search {
 
         for d in 1..max_depth {
             let pos = self.opt.position.clone();
-            let (score, best_move) = self.root_negamax(&pos, d, -MATE_SCORE, MATE_SCORE);
+            let (score, best_move) = self.root_negamax(&pos, d, -MATE_SCORE, MATE_SCORE, 0);
 
             if self.stop.load(Ordering::Relaxed) {
                 break;
@@ -75,7 +75,14 @@ impl Search {
         &self.result
     }
 
-    fn root_negamax(&mut self, pos: &Chess, depth: u32, alpha: i32, beta: i32) -> (i32, UciMove) {
+    fn root_negamax(
+        &mut self,
+        pos: &Chess,
+        depth: u32,
+        alpha: i32,
+        beta: i32,
+        ply: u32,
+    ) -> (i32, UciMove) {
         let mut alpha = alpha;
         let mut best_score = -MATE_SCORE;
         let mut best_move = UciMove::Null;
@@ -84,7 +91,7 @@ impl Search {
 
         for m in moves {
             let child = pos.clone().play(m).unwrap();
-            let score = -self.negamax(&child, depth - 1, -beta, -alpha);
+            let score = -self.negamax(&child, depth - 1, -beta, -alpha, ply + 1);
 
             if self.stop.load(Ordering::Relaxed) {
                 break;
@@ -107,7 +114,7 @@ impl Search {
         (best_score, best_move)
     }
 
-    fn negamax(&mut self, pos: &Chess, depth: u32, alpha: i32, beta: i32) -> i32 {
+    fn negamax(&mut self, pos: &Chess, depth: u32, alpha: i32, beta: i32, ply: u32) -> i32 {
         self.result.nodes += 1;
 
         if self.result.nodes % 1024 == 0 {
@@ -122,13 +129,21 @@ impl Search {
             return self.eval(pos);
         }
 
+        if pos.is_checkmate() {
+            return -MATE_SCORE + ply as i32;
+        }
+
+        if pos.is_stalemate() {
+            return 0;
+        }
+
         let moves = pos.legal_moves();
         let mut alpha = alpha;
         let mut best_score = -MATE_SCORE;
 
         for m in moves {
             let child = pos.clone().play(m).unwrap();
-            let score = -self.negamax(&child, depth - 1, -beta, -alpha);
+            let score = -self.negamax(&child, depth - 1, -beta, -alpha, ply + 1);
 
             if self.stop.load(Ordering::Relaxed) {
                 return 0;
