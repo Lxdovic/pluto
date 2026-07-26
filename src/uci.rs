@@ -176,6 +176,8 @@ impl Uci {
     }
 
     fn command_go(&mut self, queue: &mut VecDeque<&str>) {
+        self.search_options.reset();
+
         #[cfg_attr(any(), rustfmt::skip)]
         while let Some(arg) = queue.pop_front() {
             match arg {

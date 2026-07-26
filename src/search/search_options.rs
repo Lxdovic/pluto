@@ -32,7 +32,7 @@ impl Default for SearchOptions {
 }
 
 impl SearchOptions {
-    pub fn build(&self) -> BuiltSearchOptions {
+    pub(crate) fn build(&self) -> BuiltSearchOptions {
         let turn_time = match self.position.turn() {
             Color::White => self.wtime,
             Color::Black => self.btime,
@@ -44,6 +44,14 @@ impl SearchOptions {
             position: self.position.clone(),
             time: self.move_time.or(turn_time),
         }
+    }
+
+    pub(crate) fn reset(&mut self) {
+        self.depth = None;
+        self.nodes = None;
+        self.move_time = None;
+        self.wtime = None;
+        self.btime = None;
     }
 
     pub(crate) fn depth(mut self, depth: u32) -> Self {
