@@ -166,7 +166,7 @@ impl Uci {
     fn command_uci(&self) {
         println!("id name {}", self.name);
         println!("id author {}", self.author);
-        println!("option name Hash type spin default 1 min 1 max 1");
+        println!("option name Hash type spin default 1 min 1 max 16");
         println!("option name Threads type spin default 1 min 1 max 1");
         println!("uciok");
     }
