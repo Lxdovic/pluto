@@ -1,3 +1,4 @@
+use crate::search::eval::Eval;
 use crate::search::search_options::BuiltSearchOptions;
 use crate::search::time::TimeManager;
 use crate::search::{search_options::SearchOptions, search_result::SearchResult};
@@ -126,7 +127,7 @@ impl Search {
         }
 
         if depth == 0 {
-            return self.eval(pos);
+            return Eval::simple(pos);
         }
 
         let moves = pos.legal_moves();
@@ -163,30 +164,5 @@ impl Search {
         }
 
         best_score
-    }
-
-    fn eval(&self, pos: &Chess) -> i32 {
-        let mut score = 0;
-
-        for (_sq, piece) in pos.board() {
-            let value = match piece.role {
-                shakmaty::Role::Pawn => 1,
-                shakmaty::Role::Knight => 3,
-                shakmaty::Role::Bishop => 3,
-                shakmaty::Role::Rook => 5,
-                shakmaty::Role::Queen => 9,
-                shakmaty::Role::King => 0,
-            };
-
-            match piece.color {
-                shakmaty::Color::White => score += value,
-                shakmaty::Color::Black => score -= value,
-            }
-        }
-
-        match pos.turn() {
-            shakmaty::Color::White => score,
-            shakmaty::Color::Black => -score,
-        }
     }
 }
