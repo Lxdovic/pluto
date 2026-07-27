@@ -129,15 +129,15 @@ impl Search {
             return self.eval(pos);
         }
 
-        if pos.is_checkmate() {
-            return -MATE_SCORE + ply as i32;
-        }
-
-        if pos.is_stalemate() {
-            return 0;
-        }
-
         let moves = pos.legal_moves();
+
+        if moves.is_empty() {
+            match pos.is_check() {
+                true => return -MATE_SCORE + ply as i32,
+                false => return 0,
+             }
+        }
+
         let mut alpha = alpha;
         let mut best_score = -MATE_SCORE;
 
