@@ -11,7 +11,7 @@ impl TimeManager {
                 .unwrap()
                 .as_millis() as u64;
 
-            if elapsed_time >= move_time / 25 {
+            if elapsed_time >= move_time {
                 return true;
             }
         }

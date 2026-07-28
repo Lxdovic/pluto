@@ -42,7 +42,7 @@ impl SearchOptions {
             depth: self.depth,
             nodes: self.nodes,
             position: self.position.clone(),
-            time: self.move_time.or(turn_time),
+            time: self.move_time.or(turn_time.map(|t| t / 25)),
         }
     }
 

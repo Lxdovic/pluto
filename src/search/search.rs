@@ -45,13 +45,6 @@ impl Search {
             let pos = self.opt.position.clone();
             let (score, best_move) = self.root_negamax(&pos, d, -MATE_SCORE, MATE_SCORE, 0);
 
-            if self.stop.load(Ordering::Relaxed) {
-                break;
-            }
-
-            self.result.score = score;
-            self.result.best_move = best_move;
-
             self.result.time = SystemTime::now()
                 .duration_since(self.start_time)
                 .unwrap()
@@ -59,6 +52,23 @@ impl Search {
 
             self.result.nps =
                 (self.result.nodes as f64 / (self.result.time.max(1) as f64 / 1000.0)) as u64;
+
+            if self.stop.load(Ordering::Relaxed) {
+                println!(
+                    "info depth {} time {} score cp {} nodes {} nps {} bestmove {}",
+                    d,
+                    self.result.time,
+                    self.result.score,
+                    self.result.nodes,
+                    self.result.nps,
+                    self.result.best_move
+                );
+
+                break;
+            }
+
+            self.result.score = score;
+            self.result.best_move = best_move;
 
             println!(
                 "info depth {} time {} score cp {} nodes {} nps {} bestmove {}",
@@ -118,6 +128,14 @@ impl Search {
     fn negamax(&mut self, pos: &Chess, depth: u32, alpha: i32, beta: i32, ply: u32) -> i32 {
         self.result.nodes += 1;
 
+        if let Some(search_nodes) = self.opt.nodes {
+            if self.result.nodes >= search_nodes {
+                self.stop.store(true, Ordering::Relaxed);
+
+                return 0;
+            }
+        }
+
         if self.result.nodes % 1024 == 0 {
             if TimeManager::should_stop(self.start_time, &self.opt) {
                 self.stop.store(true, Ordering::Relaxed);
@@ -136,7 +154,7 @@ impl Search {
             match pos.is_check() {
                 true => return -MATE_SCORE + ply as i32,
                 false => return 0,
-             }
+            }
         }
 
         let mut alpha = alpha;
