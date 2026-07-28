@@ -1,4 +1,5 @@
 use crate::search::eval::Eval;
+use crate::search::move_picker::MovePicker;
 use crate::search::search_options::BuiltSearchOptions;
 use crate::search::time::TimeManager;
 use crate::search::{search_options::SearchOptions, search_result::SearchResult};
@@ -89,8 +90,9 @@ impl Search {
         let mut best_move = UciMove::Null;
 
         let moves = pos.legal_moves();
+        let mut mp = MovePicker::new(moves.to_vec());
 
-        for m in moves {
+        while let Some(m) = mp.next() {
             let child = pos.clone().play(m).unwrap();
             let score = -self.negamax(&child, depth - 1, -beta, -alpha, ply + 1);
 
@@ -142,7 +144,9 @@ impl Search {
         let mut alpha = alpha;
         let mut best_score = -MATE_SCORE;
 
-        for m in moves {
+        let mut mp = MovePicker::new(moves.to_vec());
+
+        while let Some(m) = mp.next() {
             let child = pos.clone().play(m).unwrap();
             let score = -self.negamax(&child, depth - 1, -beta, -alpha, ply + 1);
 
