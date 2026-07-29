@@ -54,7 +54,7 @@ impl MovePicker {
                 })
                 .unwrap_or(0);
 
-            score += cap_value - role_value
+            score += cap_value * 50 - role_value
         }
 
         score
