@@ -1,4 +1,4 @@
-use crate::search::eval::Eval;
+use crate::search::eval::{Eval, Score};
 use crate::search::move_picker::MovePicker;
 use crate::search::search_options::BuiltSearchOptions;
 use crate::search::time::TimeManager;
@@ -68,11 +68,20 @@ impl Search {
                 break;
             }
 
-            self.result.score = score;
+            match MAX_DEPTH as i32 > MATE_SCORE - score.abs() {
+                true => {
+                    self.result.score = match score > 0 {
+                        true => Score::Mate((MATE_SCORE - score) / 2 + 1),
+                        false => Score::Mate((-MATE_SCORE - score) / 2),
+                    }
+                }
+                false => self.result.score = Score::Cp(score),
+            }
+
             self.result.best_move = best_move;
 
             println!(
-                "info depth {} time {} score cp {} nodes {} nps {} bestmove {}",
+                "info depth {} time {} score {} nodes {} nps {} bestmove {}",
                 d,
                 self.result.time,
                 self.result.score,
