@@ -129,7 +129,7 @@ impl Search {
         }
 
         if depth == 0 {
-            return Eval::simple(pos);
+            return self.qsearch(pos, alpha, beta, ply);
         }
 
         let moves = pos.legal_moves();
@@ -138,7 +138,7 @@ impl Search {
             match pos.is_check() {
                 true => return -MATE_SCORE + ply as i32,
                 false => return 0,
-             }
+            }
         }
 
         let mut alpha = alpha;
@@ -168,5 +168,58 @@ impl Search {
         }
 
         best_score
+    }
+
+    fn qsearch(&mut self, pos: &Chess, alpha: i32, beta: i32, ply: u32) -> i32 {
+        self.result.nodes += 1;
+
+        if let Some(search_nodes) = self.opt.nodes {
+            if self.result.nodes >= search_nodes {
+                self.stop.store(true, Ordering::Relaxed);
+
+                return 0;
+            }
+        }
+
+        if self.result.nodes % 1024 == 0 {
+            if TimeManager::should_stop(self.start_time, &self.opt) {
+                self.stop.store(true, Ordering::Relaxed);
+
+                return 0;
+            }
+        }
+
+        let stand_pat = Eval::simple(pos);
+
+        if stand_pat >= beta {
+            return beta;
+        }
+
+        let mut alpha = alpha;
+
+        if stand_pat > alpha {
+            alpha = stand_pat;
+        }
+
+        let moves = pos.capture_moves();
+
+        for m in moves {
+            let child = pos.clone().play(m).unwrap();
+            let score = -self.qsearch(&child, -beta, -alpha, ply + 1);
+
+            if self.stop.load(Ordering::Relaxed) {
+                return 0;
+            }
+
+            if score >= beta {
+                return beta;
+            }
+
+            if score > alpha {
+                alpha = score;
+            }
+        }
+
+        alpha
     }
 }
