@@ -230,6 +230,13 @@ impl Search {
 
         let moves = pos.capture_moves();
 
+        if moves.is_empty() {
+            match pos.is_check() {
+                true => return -MATE_SCORE + ply as i32,
+                false => return 0,
+            }
+        }
+
         for m in moves {
             let child = pos.clone().play(m).unwrap();
             let score = -self.qsearch(&child, -beta, -alpha, ply + 1);
