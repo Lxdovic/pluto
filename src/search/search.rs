@@ -40,7 +40,12 @@ impl Search {
     pub(crate) fn run(&mut self) -> &SearchResult {
         self.init();
 
-        let max_depth = self.opt.depth.unwrap_or(MAX_DEPTH) + 1;
+        let max_depth = match self.opt.depth {
+            Some(depth) => depth + 1,
+            None => MAX_DEPTH,
+        }
+        // make sure at least 1 depth is searched
+        .max(2);
 
         for d in 1..max_depth {
             let pos = self.opt.position.clone();
