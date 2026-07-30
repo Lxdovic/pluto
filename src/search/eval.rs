@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use shakmaty::{Chess, Position};
 
 pub(crate) struct Eval;
@@ -73,6 +75,21 @@ const KING_TABLE: [i32; 64] = [
     20, 20,  0,  0,  0,  0, 20, 20,
     20, 30, 10,  0,  0, 10, 30, 20
 ];
+
+#[derive(Debug)]
+pub(crate) enum Score {
+    Cp(i32),
+    Mate(i32),
+}
+
+impl Display for Score {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Score::Cp(score) => write!(f, "cp {}", score),
+            Score::Mate(score) => write!(f, "mate {}", score),
+        }
+    }
+}
 
 impl Eval {
     pub(crate) fn simple(pos: &Chess) -> i32 {
