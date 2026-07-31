@@ -1,0 +1,29 @@
+#!/bin/sh
+
+MSG_FILE=$1
+
+if grep -q "^bench" "$MSG_FILE"; then
+    exit 0
+fi
+
+echo "Calculating engine bench..."
+
+make EXE=pluto > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "Error: Build failed. Aborting commit."
+    exit 1
+fi
+
+BENCH_SCORE=$(./pluto bench 2>&1 | tail -n 1 | awk '{print $1}')
+
+if [ -z "$BENCH_SCORE" ]; then
+    echo "Error: Failed to extract bench score. Aborting commit."
+    exit 1
+fi
+
+echo "" >> "$MSG_FILE"
+echo "bench $BENCH_SCORE" >> "$MSG_FILE"
+
+rm -f pluto
+
+echo "Appended bench score ($BENCH_SCORE) to commit message."
