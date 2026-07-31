@@ -2,9 +2,11 @@ use crate::search::eval::{Eval, Score};
 use crate::search::move_picker::MovePicker;
 use crate::search::search_options::BuiltSearchOptions;
 use crate::search::time::TimeManager;
+use crate::search::tt::{TTBound, TranspositionTable};
 use crate::search::{search_options::SearchOptions, search_result::SearchResult};
 use shakmaty::uci::UciMove;
-use shakmaty::{CastlingMode, Chess, Position};
+use shakmaty::zobrist::Zobrist64;
+use shakmaty::{CastlingMode, Chess, EnPassantMode, Move, Position};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::SystemTime;
@@ -18,6 +20,7 @@ pub(crate) struct Search {
     stop: Arc<AtomicBool>,
     result: SearchResult,
     start_time: SystemTime,
+    tt: TranspositionTable,
 }
 
 impl Search {
@@ -27,6 +30,7 @@ impl Search {
             stop,
             result: SearchResult::new(),
             start_time: SystemTime::now(),
+            tt: TranspositionTable::new(419_430), // 16 MB
         }
     }
 }
@@ -35,6 +39,7 @@ impl Search {
     fn init(&mut self) {
         self.result = SearchResult::new();
         self.start_time = SystemTime::now();
+        self.tt.clear();
     }
 
     pub(crate) fn run(&mut self) -> &SearchResult {
@@ -114,7 +119,7 @@ impl Search {
         let mut best_move = UciMove::Null;
 
         let moves = pos.legal_moves();
-        let mut mp = MovePicker::new(moves.to_vec());
+        let mut mp = MovePicker::new(moves.to_vec(), None);
 
         while let Some(m) = mp.next() {
             let child = pos.clone().play(m).unwrap();
@@ -164,6 +169,20 @@ impl Search {
             return self.qsearch(pos, alpha, beta, ply);
         }
 
+        let is_root = ply == 0;
+        let position_key: Zobrist64 = pos.zobrist_hash::<Zobrist64>(EnPassantMode::Legal);
+        let entry = self.tt.probe(position_key);
+
+        if entry.key == position_key
+            && !is_root
+            && entry.depth >= depth
+            && (entry.bound == TTBound::Exact
+                || (entry.bound == TTBound::Alpha && entry.score <= alpha)
+                || (entry.bound == TTBound::Beta && entry.score >= beta))
+        {
+            return entry.score;
+        }
+
         let moves = pos.legal_moves();
 
         if moves.is_empty() {
@@ -173,10 +192,12 @@ impl Search {
             }
         }
 
+        let start_alpha = alpha;
         let mut alpha = alpha;
         let mut best_score = -MATE_SCORE;
+        let mut best_move: Option<Move> = None;
 
-        let mut mp = MovePicker::new(moves.to_vec());
+        let mut mp = MovePicker::new(moves.to_vec(), entry.best_move);
 
         while let Some(m) = mp.next() {
             let child = pos.clone().play(m).unwrap();
@@ -188,6 +209,7 @@ impl Search {
 
             if score > best_score {
                 best_score = score;
+                best_move = Some(m);
 
                 if score > alpha {
                     alpha = score;
@@ -195,9 +217,18 @@ impl Search {
             }
 
             if score >= beta {
-                return best_score;
+                break;
             }
         }
+
+        let bound = match best_score {
+            score if score <= start_alpha => TTBound::Alpha,
+            score if score >= beta => TTBound::Beta,
+            _ => TTBound::Exact,
+        };
+
+        self.tt
+            .store(position_key, depth, best_score, bound, best_move);
 
         best_score
     }

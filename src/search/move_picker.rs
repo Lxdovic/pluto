@@ -5,10 +5,10 @@ pub struct MovePicker {
 }
 
 impl MovePicker {
-    pub(crate) fn new(moves: Vec<Move>) -> Self {
+    pub(crate) fn new(moves: Vec<Move>, tt_move: Option<Move>) -> Self {
         let mut scored_moves: Vec<(i32, Move)> = moves
             .into_iter()
-            .map(|m| (Self::score_move(&m), m))
+            .map(|m| (Self::score_move(&m, tt_move), m))
             .collect();
         scored_moves.sort_unstable_by_key(|(s, _)| *s);
 
@@ -19,8 +19,12 @@ impl MovePicker {
         self.scored_moves.pop().map(|(_, m)| m)
     }
 
-    fn score_move(m: &Move) -> i32 {
+    fn score_move(m: &Move, tt_move: Option<Move>) -> i32 {
         let mut score = 0;
+
+        if tt_move == Some(*m) {
+            score += 1000;
+        }
 
         if m.is_promotion() {
             score += match m.promotion() {
