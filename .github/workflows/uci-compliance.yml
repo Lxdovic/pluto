@@ -1,0 +1,35 @@
+name: UCI Compliance Check
+
+on:
+  push:
+    branches: [ "main", "dev", "rewrite" ]
+  pull_request:
+    branches: [ "*" ]
+
+jobs:
+  test-uci:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Engine Code
+      uses: actions/checkout@v3
+
+    - name: Build Engine
+      run: |
+        # Replace this with your actual build command (e.g., make, cmake, cargo build)
+        make EXE=pluto 
+
+    - name: Download Fastchess
+      run: |
+        # Download the latest Linux x86-64 tar archive
+        wget https://github.com/Disservin/fastchess/releases/latest/download/fastchess-linux-x86-64.tar
+        
+        # Extract the archive
+        tar -xvf fastchess-linux-x86-64.tar
+        
+        # Ensure the extracted binary (usually named 'fastchess') is executable
+        chmod +x fastchess-linux-x86-64/fastchess
+
+    - name: Run UCI Compliance Test
+      run: |
+        ./fastchess-linux-x86-64/fastchess --compliance ./pluto
