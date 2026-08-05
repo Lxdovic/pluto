@@ -1,5 +1,4 @@
 use std::env;
-
 pub mod search;
 pub mod uci;
 

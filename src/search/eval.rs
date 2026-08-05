@@ -5,7 +5,7 @@ use shakmaty::{Chess, Position};
 pub(crate) struct Eval;
 
 #[cfg_attr(any(), rustfmt::skip)]
-const PAWN_TABLE: [i32; 64] = [
+const PAWN_TABLE: [i16; 64] = [
     0,  0,  0,  0,  0,  0,  0,  0,
     50, 50, 50, 50, 50, 50, 50, 50,
     10, 10, 20, 30, 30, 20, 10, 10,
@@ -17,7 +17,7 @@ const PAWN_TABLE: [i32; 64] = [
 ];
 
 #[cfg_attr(any(), rustfmt::skip)]
-const KNIGHT_TABLE: [i32; 64] = [
+const KNIGHT_TABLE: [i16; 64] = [
     -50,-40,-30,-30,-30,-30,-40,-50,
     -40,-20,  0,  0,  0,  0,-20,-40,
     -30,  0, 10, 15, 15, 10,  0,-30,
@@ -29,7 +29,7 @@ const KNIGHT_TABLE: [i32; 64] = [
 ];
 
 #[cfg_attr(any(), rustfmt::skip)]
-const BISHOP_TABLE: [i32; 64] = [
+const BISHOP_TABLE: [i16; 64] = [
     -20,-10,-10,-10,-10,-10,-10,-20,
     -10,  0,  0,  0,  0,  0,  0,-10,
     -10,  0,  5, 10, 10,  5,  0,-10,
@@ -41,7 +41,7 @@ const BISHOP_TABLE: [i32; 64] = [
 ];
 
 #[cfg_attr(any(), rustfmt::skip)]
-const ROOK_TABLE: [i32; 64] = [
+const ROOK_TABLE: [i16; 64] = [
     0,  0,  0,  0,  0,  0,  0,  0,
     5, 10, 10, 10, 10, 10, 10,  5,
     -5,  0,  0,  0,  0,  0,  0, -5,
@@ -53,7 +53,7 @@ const ROOK_TABLE: [i32; 64] = [
 ];
 
 #[cfg_attr(any(), rustfmt::skip)]
-const QUEEN_TABLE: [i32; 64] = [
+const QUEEN_TABLE: [i16; 64] = [
     -20,-10,-10, -5, -5,-10,-10,-20,
     -10,  0,  0,  0,  0,  0,  0,-10,
     -10,  0,  5,  5,  5,  5,  0,-10,
@@ -65,7 +65,7 @@ const QUEEN_TABLE: [i32; 64] = [
 ];
 
 #[cfg_attr(any(), rustfmt::skip)]
-const KING_TABLE: [i32; 64] = [
+const KING_TABLE: [i16; 64] = [
     -30,-40,-40,-50,-50,-40,-40,-30,
     -30,-40,-40,-50,-50,-40,-40,-30,
     -30,-40,-40,-50,-50,-40,-40,-30,
@@ -78,8 +78,8 @@ const KING_TABLE: [i32; 64] = [
 
 #[derive(Debug)]
 pub(crate) enum Score {
-    Cp(i32),
-    Mate(i32),
+    Cp(i16),
+    Mate(u8),
 }
 
 impl Display for Score {
@@ -92,7 +92,7 @@ impl Display for Score {
 }
 
 impl Eval {
-    pub(crate) fn simple(pos: &Chess) -> i32 {
+    pub(crate) fn simple(pos: &Chess) -> i16 {
         let mut score = 0;
 
         for (sq, piece) in pos.board() {
