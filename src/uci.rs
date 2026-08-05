@@ -142,7 +142,12 @@ impl Uci {
         let value = _queue.pop_front().unwrap_or("");
 
         match value {
-            "Hash" => {}
+            "Hash" => {
+                self.search_options.hash = _queue
+                    .pop_front()
+                    .and_then(|s| s.parse::<u16>().ok())
+                    .unwrap_or(16)
+            }
             "Threads" => {}
             _ => {}
         }
@@ -181,7 +186,7 @@ impl Uci {
         #[cfg_attr(any(), rustfmt::skip)]
         while let Some(arg) = queue.pop_front() {
             match arg {
-                "depth" => self.search_options.depth = queue.pop_front().and_then(|s| s.parse::<u32>().ok()),
+                "depth" => self.search_options.depth = queue.pop_front().and_then(|s| s.parse::<u8>().ok()),
                 "nodes" => self.search_options.nodes = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
                 "movetime" => self.search_options.move_time = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
                 "wtime" => self.search_options.wtime = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
