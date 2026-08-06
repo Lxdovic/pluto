@@ -79,7 +79,7 @@ const KING_TABLE: [i16; 64] = [
 #[derive(Debug)]
 pub(crate) enum Score {
     Cp(i16),
-    Mate(u8),
+    Mate(i8),
 }
 
 impl Display for Score {
