@@ -11,7 +11,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::SystemTime;
 
-pub(crate) const MATE_SCORE: i16 = i16::MAX;
+pub(crate) const MATE_SCORE: i16 = 30_000;
 pub(crate) const MAX_DEPTH: u8 = u8::MAX;
 
 pub(crate) struct Search {
@@ -40,9 +40,13 @@ impl Search {
 
 impl Search {
     fn init(&mut self) {
+        if self.opt.new_game {
+            println!("CLEARING");
+            self.tt.clear();
+        }
+
         self.result = SearchResult::new();
         self.start_time = SystemTime::now();
-        self.tt.clear();
     }
 
     pub(crate) fn run(&mut self) -> &SearchResult {
@@ -84,8 +88,8 @@ impl Search {
             match MAX_DEPTH as i16 > MATE_SCORE - score.abs() {
                 true => {
                     self.result.score = match score > 0 {
-                        true => Score::Mate((MATE_SCORE - score) as u8 / 2 + 1),
-                        false => Score::Mate((-MATE_SCORE - score) as u8 / 2),
+                        true => Score::Mate((MATE_SCORE - score) as i8 / 2 + 1),
+                        false => Score::Mate((-MATE_SCORE - score) as i8 / 2),
                     }
                 }
                 false => self.result.score = Score::Cp(score),
