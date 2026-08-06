@@ -58,10 +58,15 @@ impl Uci {
             "setoption" => self.command_option(&mut queue),
             "bench" => self.command_bench(),
             "stop" => self.command_stop(),
-            "ucinewgame" => {} // TODO: implement ucinewgame command
+            "ucinewgame" => self.command_newgame(),
             "debug" => self.command_debug(&mut queue),
             _ => {}
         }
+    }
+
+    fn command_newgame(&mut self) {
+        self.search_options.position = Chess::default();
+        self.search_options.new_game = true;
     }
 
     fn command_debug(&mut self, _queue: &mut VecDeque<&str>) {
@@ -188,9 +193,9 @@ impl Uci {
             match arg {
                 "depth" => self.search_options.depth = queue.pop_front().and_then(|s| s.parse::<u8>().ok()),
                 "nodes" => self.search_options.nodes = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
-                "movetime" => self.search_options.move_time = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
                 "wtime" => self.search_options.wtime = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
                 "btime" => self.search_options.btime = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
+                "movetime" => self.search_options.move_time = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
                 _ => {}
             }
         }
@@ -217,5 +222,9 @@ impl Uci {
 
         // Store the handle of the new search thread
         self.search_handle = Some(handle);
+
+        if self.search_options.new_game {
+            self.search_options.new_game = false;
+        }
     }
 }
