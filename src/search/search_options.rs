@@ -9,7 +9,6 @@ pub(crate) struct SearchOptions {
     pub(crate) wtime: Option<u64>,
     pub(crate) btime: Option<u64>,
     pub(crate) hash: u16,
-    pub(crate) new_game: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -18,8 +17,6 @@ pub(crate) struct BuiltSearchOptions {
     pub(crate) nodes: Option<u64>,
     pub(crate) time: Option<u64>,
     pub(crate) position: Chess,
-    pub(crate) hash: u16,
-    pub(crate) new_game: bool,
 }
 
 impl Default for SearchOptions {
@@ -32,7 +29,6 @@ impl Default for SearchOptions {
             move_time: None,
             position: Chess::default(),
             hash: 16,
-            new_game: true,
         }
     }
 }
@@ -49,8 +45,6 @@ impl SearchOptions {
             nodes: self.nodes,
             position: self.position.clone(),
             time: self.move_time.or(turn_time.map(|t| t / 25)),
-            hash: self.hash,
-            new_game: self.new_game,
         }
     }
 

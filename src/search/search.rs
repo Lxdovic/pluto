@@ -14,37 +14,35 @@ use std::time::SystemTime;
 pub(crate) const MATE_SCORE: i16 = 30_000;
 pub(crate) const MAX_DEPTH: u8 = u8::MAX;
 
-pub(crate) struct Search {
+pub(crate) struct Search<'a> {
     opt: BuiltSearchOptions,
     #[allow(dead_code)]
     stop: Arc<AtomicBool>,
     result: SearchResult,
     start_time: SystemTime,
-    tt: TranspositionTable,
+    tt: &'a mut TranspositionTable,
 }
 
-impl Search {
-    pub(crate) fn from(opt: &SearchOptions, stop: Arc<AtomicBool>) -> Self {
+impl<'a> Search<'a> {
+    pub(crate) fn from(
+        opt: &SearchOptions,
+        stop: Arc<AtomicBool>,
+        tt: &'a mut TranspositionTable,
+    ) -> Self {
         let built_opt = opt.build();
-        let hash = built_opt.hash;
 
         Search {
             opt: built_opt,
             stop,
             result: SearchResult::new(),
             start_time: SystemTime::now(),
-            tt: TranspositionTable::new(hash),
+            tt,
         }
     }
 }
 
-impl Search {
+impl<'a> Search<'a> {
     fn init(&mut self) {
-        if self.opt.new_game {
-            println!("CLEARING");
-            self.tt.clear();
-        }
-
         self.result = SearchResult::new();
         self.start_time = SystemTime::now();
     }

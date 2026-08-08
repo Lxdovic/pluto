@@ -1,10 +1,11 @@
+use crate::search::tt::TranspositionTable;
 use crate::search::{search::Search, search_options::SearchOptions};
 use shakmaty::fen::Fen;
 use shakmaty::uci::UciMove;
 use shakmaty::{CastlingMode, Chess, Position};
 use std::collections::VecDeque;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
 const SEARCH_STACK_SIZE: usize = 8 * 1024 * 1024; // 8 MB
@@ -15,6 +16,7 @@ pub(crate) struct Uci {
     stop: Arc<AtomicBool>,
     search_options: SearchOptions,
     search_handle: Option<JoinHandle<()>>,
+    tt: Arc<Mutex<TranspositionTable>>,
 }
 
 impl Default for Uci {
@@ -24,6 +26,7 @@ impl Default for Uci {
             author: String::from("Ludovic Debever"),
             stop: Arc::new(AtomicBool::new(false)),
             search_options: SearchOptions::default(),
+            tt: Arc::new(Mutex::new(TranspositionTable::new(16))),
             search_handle: None,
         }
     }
@@ -66,7 +69,7 @@ impl Uci {
 
     fn command_newgame(&mut self) {
         self.search_options.position = Chess::default();
-        self.search_options.new_game = true;
+        self.tt.lock().unwrap().clear();
     }
 
     fn command_debug(&mut self, _queue: &mut VecDeque<&str>) {
@@ -118,10 +121,12 @@ impl Uci {
 
         let search_options = SearchOptions::default().depth(6);
         let stop = Arc::clone(&self.stop);
+        let tt = Arc::clone(&self.tt);
         let handle = std::thread::Builder::new()
             .stack_size(SEARCH_STACK_SIZE)
             .spawn(move || {
-                let mut search = Search::from(&search_options, stop);
+                let mut tt = tt.lock().unwrap();
+                let mut search = Search::from(&search_options, stop, &mut tt);
                 let result = search.run();
 
                 println!("{} nodes {} nps", result.nodes, result.nps);
@@ -148,10 +153,21 @@ impl Uci {
 
         match value {
             "Hash" => {
-                self.search_options.hash = _queue
+                // Skip the "value" keyword before the actual number.
+                _queue.pop_front();
+                let hash = _queue
                     .pop_front()
                     .and_then(|s| s.parse::<u16>().ok())
-                    .unwrap_or(16)
+                    .unwrap_or(16);
+
+                self.search_options.hash = hash;
+                self.tt = Arc::new(Mutex::new(TranspositionTable::new(hash)));
+            }
+            "Clear" => {
+                // "setoption name Clear Hash" arrives as two words; the first is consumed above.
+                if _queue.pop_front() == Some("Hash") {
+                    self.tt.lock().unwrap().clear();
+                }
             }
             "Threads" => {}
             _ => {}
@@ -178,6 +194,7 @@ impl Uci {
         println!("id author {}", self.author);
         println!("option name Hash type spin default 1 min 1 max 16");
         println!("option name Threads type spin default 1 min 1 max 1");
+        println!("option name Clear Hash type button");
         println!("uciok");
     }
 
@@ -209,11 +226,13 @@ impl Uci {
         self.stop.store(false, Ordering::Relaxed);
 
         let stop = Arc::clone(&self.stop);
+        let tt = Arc::clone(&self.tt);
         let search_options = self.search_options.clone();
         let handle = std::thread::Builder::new()
             .stack_size(SEARCH_STACK_SIZE)
             .spawn(move || {
-                let mut search = Search::from(&search_options, stop);
+                let mut tt = tt.lock().unwrap();
+                let mut search = Search::from(&search_options, stop, &mut tt);
                 let result = search.run();
 
                 println!("bestmove {}", result.best_move);
@@ -222,9 +241,5 @@ impl Uci {
 
         // Store the handle of the new search thread
         self.search_handle = Some(handle);
-
-        if self.search_options.new_game {
-            self.search_options.new_game = false;
-        }
     }
 }
