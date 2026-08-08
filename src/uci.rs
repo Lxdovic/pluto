@@ -1,10 +1,11 @@
+use crate::search::tt::TranspositionTable;
 use crate::search::{search::Search, search_options::SearchOptions};
 use shakmaty::fen::Fen;
 use shakmaty::uci::UciMove;
 use shakmaty::{CastlingMode, Chess, Position};
 use std::collections::VecDeque;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
 const SEARCH_STACK_SIZE: usize = 8 * 1024 * 1024; // 8 MB
@@ -15,6 +16,7 @@ pub(crate) struct Uci {
     stop: Arc<AtomicBool>,
     search_options: SearchOptions,
     search_handle: Option<JoinHandle<()>>,
+    tt: Arc<Mutex<TranspositionTable>>,
 }
 
 impl Default for Uci {
@@ -24,6 +26,7 @@ impl Default for Uci {
             author: String::from("Ludovic Debever"),
             stop: Arc::new(AtomicBool::new(false)),
             search_options: SearchOptions::default(),
+            tt: Arc::new(Mutex::new(TranspositionTable::new(16))),
             search_handle: None,
         }
     }
@@ -58,10 +61,15 @@ impl Uci {
             "setoption" => self.command_option(&mut queue),
             "bench" => self.command_bench(),
             "stop" => self.command_stop(),
-            "ucinewgame" => {} // TODO: implement ucinewgame command
+            "ucinewgame" => self.command_newgame(),
             "debug" => self.command_debug(&mut queue),
             _ => {}
         }
+    }
+
+    fn command_newgame(&mut self) {
+        self.search_options.position = Chess::default();
+        self.tt.lock().unwrap().clear();
     }
 
     fn command_debug(&mut self, _queue: &mut VecDeque<&str>) {
@@ -113,10 +121,12 @@ impl Uci {
 
         let search_options = SearchOptions::default().depth(6);
         let stop = Arc::clone(&self.stop);
+        let tt = Arc::clone(&self.tt);
         let handle = std::thread::Builder::new()
             .stack_size(SEARCH_STACK_SIZE)
             .spawn(move || {
-                let mut search = Search::from(&search_options, stop);
+                let mut tt = tt.lock().unwrap();
+                let mut search = Search::from(&search_options, stop, &mut tt);
                 let result = search.run();
 
                 println!("{} nodes {} nps", result.nodes, result.nps);
@@ -142,7 +152,23 @@ impl Uci {
         let value = _queue.pop_front().unwrap_or("");
 
         match value {
-            "Hash" => {}
+            "Hash" => {
+                // Skip the "value" keyword before the actual number.
+                _queue.pop_front();
+                let hash = _queue
+                    .pop_front()
+                    .and_then(|s| s.parse::<u16>().ok())
+                    .unwrap_or(16);
+
+                self.search_options.hash = hash;
+                self.tt = Arc::new(Mutex::new(TranspositionTable::new(hash)));
+            }
+            "Clear" => {
+                // "setoption name Clear Hash" arrives as two words; the first is consumed above.
+                if _queue.pop_front() == Some("Hash") {
+                    self.tt.lock().unwrap().clear();
+                }
+            }
             "Threads" => {}
             _ => {}
         }
@@ -168,6 +194,7 @@ impl Uci {
         println!("id author {}", self.author);
         println!("option name Hash type spin default 1 min 1 max 16");
         println!("option name Threads type spin default 1 min 1 max 1");
+        println!("option name Clear Hash type button");
         println!("uciok");
     }
 
@@ -181,11 +208,11 @@ impl Uci {
         #[cfg_attr(any(), rustfmt::skip)]
         while let Some(arg) = queue.pop_front() {
             match arg {
-                "depth" => self.search_options.depth = queue.pop_front().and_then(|s| s.parse::<u32>().ok()),
+                "depth" => self.search_options.depth = queue.pop_front().and_then(|s| s.parse::<u8>().ok()),
                 "nodes" => self.search_options.nodes = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
-                "movetime" => self.search_options.move_time = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
                 "wtime" => self.search_options.wtime = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
                 "btime" => self.search_options.btime = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
+                "movetime" => self.search_options.move_time = queue.pop_front().and_then(|s| s.parse::<u64>().ok()),
                 _ => {}
             }
         }
@@ -199,11 +226,13 @@ impl Uci {
         self.stop.store(false, Ordering::Relaxed);
 
         let stop = Arc::clone(&self.stop);
+        let tt = Arc::clone(&self.tt);
         let search_options = self.search_options.clone();
         let handle = std::thread::Builder::new()
             .stack_size(SEARCH_STACK_SIZE)
             .spawn(move || {
-                let mut search = Search::from(&search_options, stop);
+                let mut tt = tt.lock().unwrap();
+                let mut search = Search::from(&search_options, stop, &mut tt);
                 let result = search.run();
 
                 println!("bestmove {}", result.best_move);

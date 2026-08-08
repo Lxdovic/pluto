@@ -2,37 +2,48 @@ use crate::search::eval::{Eval, Score};
 use crate::search::move_picker::MovePicker;
 use crate::search::search_options::BuiltSearchOptions;
 use crate::search::time::TimeManager;
+use crate::search::tt::{TTBound, TranspositionTable};
 use crate::search::{search_options::SearchOptions, search_result::SearchResult};
 use shakmaty::uci::UciMove;
-use shakmaty::{CastlingMode, Chess, Position};
+use shakmaty::zobrist::Zobrist64;
+use shakmaty::{CastlingMode, Chess, EnPassantMode, Move, Position};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::SystemTime;
 
-pub(crate) const MATE_SCORE: i32 = 30_000;
-pub(crate) const MAX_DEPTH: u32 = 1024;
+pub(crate) const MATE_SCORE: i16 = 30_000;
+pub(crate) const MAX_DEPTH: u8 = u8::MAX;
 
-pub(crate) struct Search {
+pub(crate) struct Search<'a> {
     opt: BuiltSearchOptions,
     #[allow(dead_code)]
     stop: Arc<AtomicBool>,
     result: SearchResult,
     start_time: SystemTime,
+    tt: &'a mut TranspositionTable,
 }
 
-impl Search {
-    pub(crate) fn from(opt: &SearchOptions, stop: Arc<AtomicBool>) -> Self {
+impl<'a> Search<'a> {
+    pub(crate) fn from(
+        opt: &SearchOptions,
+        stop: Arc<AtomicBool>,
+        tt: &'a mut TranspositionTable,
+    ) -> Self {
+        let built_opt = opt.build();
+
         Search {
-            opt: opt.build(),
+            opt: built_opt,
             stop,
             result: SearchResult::new(),
             start_time: SystemTime::now(),
+            tt,
         }
     }
 }
 
-impl Search {
+impl<'a> Search<'a> {
     fn init(&mut self) {
+        self.tt.bump_generation();
         self.result = SearchResult::new();
         self.start_time = SystemTime::now();
     }
@@ -73,11 +84,11 @@ impl Search {
                 break;
             }
 
-            match MAX_DEPTH as i32 > MATE_SCORE - score.abs() {
+            match MAX_DEPTH as i16 > MATE_SCORE - score.abs() {
                 true => {
                     self.result.score = match score > 0 {
-                        true => Score::Mate((MATE_SCORE - score) / 2 + 1),
-                        false => Score::Mate((-MATE_SCORE - score) / 2),
+                        true => Score::Mate((MATE_SCORE - score) as i8 / 2 + 1),
+                        false => Score::Mate((-MATE_SCORE - score) as i8 / 2),
                     }
                 }
                 false => self.result.score = Score::Cp(score),
@@ -104,17 +115,17 @@ impl Search {
     fn root_negamax(
         &mut self,
         pos: &Chess,
-        depth: u32,
-        alpha: i32,
-        beta: i32,
+        depth: u8,
+        alpha: i16,
+        beta: i16,
         ply: u32,
-    ) -> (i32, UciMove) {
+    ) -> (i16, UciMove) {
         let mut alpha = alpha;
         let mut best_score = -MATE_SCORE;
         let mut best_move = UciMove::Null;
 
         let moves = pos.legal_moves();
-        let mut mp = MovePicker::new(moves.to_vec());
+        let mut mp = MovePicker::new(moves.to_vec(), None);
 
         while let Some(m) = mp.next() {
             let child = pos.clone().play(m).unwrap();
@@ -141,7 +152,7 @@ impl Search {
         (best_score, best_move)
     }
 
-    fn negamax(&mut self, pos: &Chess, depth: u32, alpha: i32, beta: i32, ply: u32) -> i32 {
+    fn negamax(&mut self, pos: &Chess, depth: u8, alpha: i16, beta: i16, ply: u32) -> i16 {
         self.result.nodes += 1;
 
         if let Some(search_nodes) = self.opt.nodes {
@@ -164,19 +175,36 @@ impl Search {
             return self.qsearch(pos, alpha, beta, ply);
         }
 
+        let is_root = ply == 0;
+        let position_key: Zobrist64 = pos.zobrist_hash::<Zobrist64>(EnPassantMode::Legal);
+        let entry = self.tt.probe(position_key);
+
+        if let Some(entry) = entry
+            && !is_root
+            && entry.generation == self.tt.generation()
+            && entry.depth >= depth
+            && (entry.bound == TTBound::Exact
+                || (entry.bound == TTBound::Alpha && entry.score <= alpha)
+                || (entry.bound == TTBound::Beta && entry.score >= beta))
+        {
+            return entry.score;
+        }
+
         let moves = pos.legal_moves();
 
         if moves.is_empty() {
             match pos.is_check() {
-                true => return -MATE_SCORE + ply as i32,
+                true => return -MATE_SCORE + ply as i16,
                 false => return 0,
             }
         }
 
+        let start_alpha = alpha;
         let mut alpha = alpha;
         let mut best_score = -MATE_SCORE;
+        let mut best_move: Option<Move> = None;
 
-        let mut mp = MovePicker::new(moves.to_vec());
+        let mut mp = MovePicker::new(moves.to_vec(), entry.and_then(|e| e.best_move));
 
         while let Some(m) = mp.next() {
             let child = pos.clone().play(m).unwrap();
@@ -188,6 +216,7 @@ impl Search {
 
             if score > best_score {
                 best_score = score;
+                best_move = Some(m);
 
                 if score > alpha {
                     alpha = score;
@@ -195,14 +224,23 @@ impl Search {
             }
 
             if score >= beta {
-                return best_score;
+                break;
             }
         }
+
+        let bound = match best_score {
+            score if score <= start_alpha => TTBound::Alpha,
+            score if score >= beta => TTBound::Beta,
+            _ => TTBound::Exact,
+        };
+
+        self.tt
+            .store(position_key, depth, best_score, bound, best_move);
 
         best_score
     }
 
-    fn qsearch(&mut self, pos: &Chess, alpha: i32, beta: i32, ply: u32) -> i32 {
+    fn qsearch(&mut self, pos: &Chess, alpha: i16, beta: i16, ply: u32) -> i16 {
         self.result.nodes += 1;
 
         if let Some(search_nodes) = self.opt.nodes {

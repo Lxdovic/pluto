@@ -2,17 +2,18 @@ use shakmaty::{Chess, Color, Position};
 
 #[derive(Debug, Clone)]
 pub(crate) struct SearchOptions {
-    pub(crate) depth: Option<u32>,
+    pub(crate) depth: Option<u8>,
     pub(crate) nodes: Option<u64>,
     pub(crate) move_time: Option<u64>,
     pub(crate) position: Chess,
     pub(crate) wtime: Option<u64>,
     pub(crate) btime: Option<u64>,
+    pub(crate) hash: u16,
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct BuiltSearchOptions {
-    pub(crate) depth: Option<u32>,
+    pub(crate) depth: Option<u8>,
     pub(crate) nodes: Option<u64>,
     pub(crate) time: Option<u64>,
     pub(crate) position: Chess,
@@ -27,6 +28,7 @@ impl Default for SearchOptions {
             btime: None,
             move_time: None,
             position: Chess::default(),
+            hash: 16,
         }
     }
 }
@@ -54,7 +56,7 @@ impl SearchOptions {
         self.btime = None;
     }
 
-    pub(crate) fn depth(mut self, depth: u32) -> Self {
+    pub(crate) fn depth(mut self, depth: u8) -> Self {
         self.depth = Some(depth);
         self
     }
