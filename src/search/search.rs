@@ -43,6 +43,7 @@ impl<'a> Search<'a> {
 
 impl<'a> Search<'a> {
     fn init(&mut self) {
+        self.tt.bump_generation();
         self.result = SearchResult::new();
         self.start_time = SystemTime::now();
     }
@@ -180,6 +181,7 @@ impl<'a> Search<'a> {
 
         if let Some(entry) = entry
             && !is_root
+            && entry.generation == self.tt.generation()
             && entry.depth >= depth
             && (entry.bound == TTBound::Exact
                 || (entry.bound == TTBound::Alpha && entry.score <= alpha)

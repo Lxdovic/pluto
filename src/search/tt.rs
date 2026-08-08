@@ -14,6 +14,7 @@ pub(crate) struct TTEntry {
     pub(crate) score: i16,
     pub(crate) bound: TTBound,
     pub(crate) best_move: Option<Move>,
+    pub(crate) generation: u8,
 }
 
 impl Default for TTEntry {
@@ -22,6 +23,7 @@ impl Default for TTEntry {
             key: Zobrist64(0),
             depth: 0,
             score: 0,
+            generation: 0,
             bound: TTBound::Exact,
             best_move: None,
         }
@@ -32,6 +34,7 @@ impl Default for TTEntry {
 pub(crate) struct TranspositionTable {
     pub table: Vec<TTEntry>,
     length: usize,
+    generation: u8,
 }
 
 impl TranspositionTable {
@@ -41,7 +44,16 @@ impl TranspositionTable {
         Self {
             table: vec![TTEntry::default(); length],
             length,
+            generation: 0,
         }
+    }
+
+    pub(crate) fn generation(&self) -> u8 {
+        self.generation
+    }
+
+    pub(crate) fn bump_generation(&mut self) {
+        self.generation = self.generation.wrapping_add(1);
     }
 
     pub(crate) fn probe(&self, key: Zobrist64) -> Option<&TTEntry> {
@@ -70,6 +82,7 @@ impl TranspositionTable {
             score,
             bound,
             best_move,
+            generation: self.generation,
         };
 
         self.table[index] = entry;
@@ -77,5 +90,6 @@ impl TranspositionTable {
 
     pub(crate) fn clear(&mut self) {
         self.table = vec![TTEntry::default(); self.length];
+        self.generation = 0;
     }
 }
