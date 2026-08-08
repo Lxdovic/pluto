@@ -205,10 +205,20 @@ impl<'a> Search<'a> {
         let mut best_move: Option<Move> = None;
 
         let mut mp = MovePicker::new(moves.to_vec(), entry.and_then(|e| e.best_move));
+        let mut move_index = 0;
 
         while let Some(m) = mp.next() {
+            move_index += 1;
+
             let child = pos.clone().play(m).unwrap();
-            let score = -self.negamax(&child, depth - 1, -beta, -alpha, ply + 1);
+            let mut r = 1;
+
+            if depth >= 3 && move_index >= 2 && !child.is_check() {
+                r = (1.5 + (depth as f32).ln() * (move_index as f32).ln() / 3.0) as u8;
+                r = r.clamp(1, depth);
+            }
+
+            let score = -self.negamax(&child, depth - r, -beta, -alpha, ply + 1);
 
             if self.stop.load(Ordering::Relaxed) {
                 return 0;

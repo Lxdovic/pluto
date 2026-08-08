@@ -119,7 +119,7 @@ impl Uci {
     pub(crate) fn command_bench(&mut self) {
         self.stop.store(false, Ordering::Relaxed);
 
-        let search_options = SearchOptions::default().depth(6);
+        let search_options = SearchOptions::default().depth(10);
         let stop = Arc::clone(&self.stop);
         let tt = Arc::clone(&self.tt);
         let handle = std::thread::Builder::new()
