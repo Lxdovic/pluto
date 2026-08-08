@@ -9,18 +9,17 @@ pub(crate) enum TTBound {
 
 #[derive(Debug, Clone)]
 pub(crate) struct TTEntry {
-    pub(crate) sig: u16,
+    pub(crate) key: Zobrist64,
     pub(crate) depth: u8,
     pub(crate) score: i16,
     pub(crate) bound: TTBound,
-    // pub(crate) best_move: [u8; 2],
     pub(crate) best_move: Option<Move>,
 }
 
 impl Default for TTEntry {
     fn default() -> Self {
         TTEntry {
-            sig: 0,
+            key: Zobrist64(0),
             depth: 0,
             score: 0,
             bound: TTBound::Exact,
@@ -47,10 +46,9 @@ impl TranspositionTable {
 
     pub(crate) fn probe(&self, key: Zobrist64) -> Option<&TTEntry> {
         let index = key.0 as usize % self.length;
-
         let entry = &self.table[index];
 
-        if entry.sig != key.0 as u16 {
+        if entry.key != key {
             return None;
         }
 
@@ -67,7 +65,7 @@ impl TranspositionTable {
     ) {
         let index = key.0 as usize % self.length;
         let entry = TTEntry {
-            sig: key.0 as u16,
+            key,
             depth,
             score,
             bound,
